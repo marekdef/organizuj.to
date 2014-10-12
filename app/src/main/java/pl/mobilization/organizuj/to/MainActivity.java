@@ -232,13 +232,15 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
                         Attendee[] attendees = gson.fromJson(body, Attendee[].class);
 
-                        ContentValues contentValues = new ContentValues();
                         for(Attendee attendee: attendees) {
+                            ContentValues contentValues = new ContentValues();
                             contentValues.put(AttendeesDBOpenHelper.COLUMN_ID, attendee.id);
                             contentValues.put(AttendeesDBOpenHelper.COLUMN_LNAME, attendee.last_name);
                             contentValues.put(AttendeesDBOpenHelper.COLUMN_FNAME, attendee.first_name);
                             contentValues.put(AttendeesDBOpenHelper.COLUMN_ISPRESENT_REMOTE, attendee.is_present);
+                            writableDatabase.insert(AttendeesDBOpenHelper.TABLE_NAME, attendee.last_name, contentValues);
                         }
+
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
