@@ -1,5 +1,6 @@
 package pl.mobilization.organizuj.to;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -46,8 +47,10 @@ import pl.mobilization.organizuj.to.json.Attendee;
 import static android.widget.AbsListView.CHOICE_MODE_NONE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_EMAIL;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_FNAME;
+import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_ID;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_LNAME;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_LOCAL_PRESENCE;
+import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_NEEDSUPDATE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_REMOTE_PRESENCE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_TYPE;
 
@@ -156,11 +159,13 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 LOGGER.debug("onItemClick on view {} at {} on id {}", view, position, id);
                 CheckBox local = (CheckBox) view.findViewById(R.id.local);
 
-                Cursor cursor = writableDatabase.rawQuery("UPDATE " + AttendeesDBOpenHelper.TABLE_NAME +
-                                " SET " + AttendeesDBOpenHelper.COLUMN_NEEDSUPDATE + " = 1, " +
-                                COLUMN_LOCAL_PRESENCE + " = ? " +
-                                "WHERE " + AttendeesDBOpenHelper.COLUMN_ID + " = ?",
-                        new String[]{local.isChecked() ? "0" : "1", String.valueOf(id)});
+                ContentValues cv = new ContentValues();
+                cv.put(COLUMN_NEEDSUPDATE, 1);
+                cv.put(COLUMN_LOCAL_PRESENCE, !local.isChecked());
+
+                int rows = writableDatabase.update(AttendeesDBOpenHelper.TABLE_NAME, cv, COLUMN_ID + " = ?",
+
+                        new String[]{String.valueOf(id)});
 
                 getSupportLoaderManager().restartLoader(ATTENDEE_LOADER, null, MainActivity.this);
 
@@ -280,7 +285,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO ATTENDEES " +
                                 "(%s, %s, %s, %s, %s, %s ) " +
                                 "VALUES (?, ?, ?, ?, ?, ?)",
-                                AttendeesDBOpenHelper.COLUMN_ID,
+                                COLUMN_ID,
                                 COLUMN_FNAME,
                                 COLUMN_LNAME,
                                 COLUMN_REMOTE_PRESENCE,

@@ -21,6 +21,7 @@ import java.util.Map;
 import pl.mobilization.organizuj.to.json.Guest;
 
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_ID;
+import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_LOCAL_PRESENCE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_REMOTE_PRESENCE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_NEEDSUPDATE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.TABLE_NAME;
@@ -74,12 +75,12 @@ public class UpdateAttendanceIntentService extends IntentService {
      */
     private void handleActionCheckIn() {
         Cursor cursor = writableDatabase.query(TABLE_NAME,
-                new String[]{COLUMN_ID, COLUMN_REMOTE_PRESENCE},
+                new String[]{COLUMN_ID, COLUMN_LOCAL_PRESENCE},
                 COLUMN_NEEDSUPDATE + " = 1 ", null, null, null, null);
 
         int count = cursor.getCount();
         if (count == 0) {
-            LOGGER.debug("handleActionCheckIn No items to checkin");
+            LOGGER.warn("handleActionCheckIn No items to checkin");
             return;
         }
 
@@ -123,7 +124,7 @@ public class UpdateAttendanceIntentService extends IntentService {
         writableDatabase.beginTransaction();
 
         SQLiteStatement sqLiteStatement = writableDatabase.compileStatement("UPDATE " + TABLE_NAME  + " " +
-                        "SET "+ COLUMN_NEEDSUPDATE +" = 0 " +
+                        "SET "+ COLUMN_NEEDSUPDATE +" = 0, " +
                          COLUMN_REMOTE_PRESENCE + " = ? "+
                         "WHERE "+ COLUMN_ID+" = ?");
 
