@@ -4,7 +4,4 @@
     <string name="app_name">Organizuj.to</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
-    <string name="password"></string>
-    <string name="username"></string>
-
 </resources>

@@ -1,5 +1,7 @@
 package pl.mobilization.organizuj.to.json;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * Created by marekdef on 08.10.14.
  */
@@ -9,6 +11,24 @@ public class Attendee {
     public String email;
     public String first_name;
     public String last_name;
-    public String guest_type_description;
+    @SerializedName(value = "guest_type_description")
+    public String type;
     public String url;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Attendee attendee = (Attendee) o;
+
+        if (id != attendee.id) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return (int) (id ^ (id >>> 32));
+    }
 }

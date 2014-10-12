@@ -13,6 +13,14 @@ import android.net.Uri;
 import android.os.CancellationSignal;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
+import android.util.Log;
+
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class AttendeesProvider extends ContentProvider {
 
@@ -25,6 +33,8 @@ public class AttendeesProvider extends ContentProvider {
     private static final int ATTENDEE_LIST = 1;
     private static final int ATTENDEE_ID = 2;
 
+    public static final Logger LOGGER = LoggerFactory.getLogger(AttendeesProvider.class);
+
     static {
         URI_MATCHER.addURI(AUTHORITY,
                 "attendees",
@@ -34,13 +44,15 @@ public class AttendeesProvider extends ContentProvider {
                 ATTENDEE_ID);
     }
 
+    private static final String TAG = AttendeesProvider.class.getSimpleName();
+
     private AttendeesDBOpenHelper attendeesDBOpenHelper;
     private SQLiteDatabase writableDatabase;
 
     @Override
     public boolean onCreate() {
         attendeesDBOpenHelper = new AttendeesDBOpenHelper(getContext());
-        return false;
+        return true;
     }
 
     @Override
@@ -66,7 +78,7 @@ public class AttendeesProvider extends ContentProvider {
             case ATTENDEE_LIST:
                 builder.setTables(AttendeesDBOpenHelper.TABLE_NAME);
                 if (TextUtils.isEmpty(sortOrder)) {
-                    sortOrder = " _ID ASC";
+                    sortOrder = " " + AttendeesDBOpenHelper.COLUMN_LNAME +" ASC";
                 }
                 break;
             case ATTENDEE_ID:
@@ -79,6 +91,7 @@ public class AttendeesProvider extends ContentProvider {
                 throw new IllegalArgumentException(
                         "Unsupported URI: " + uri);
         }
+        LOGGER.info("Selection {} args {}", selection, new ReflectionToStringBuilder(selectionArgs).toString());
         Cursor cursor =
                 builder.query(
                         db,
@@ -100,7 +113,7 @@ public class AttendeesProvider extends ContentProvider {
         if(URI_MATCHER.match(uri) != ATTENDEE_LIST)
             throw new IllegalArgumentException(
                 "Unsupported URI for insertion: " + uri);
-        long insert = writableDatabase.insert(AttendeesDBOpenHelper.TABLE_NAME, null, contentValues);
+        long insert = attendeesDBOpenHelper.getWritableDatabase().insert(AttendeesDBOpenHelper.TABLE_NAME, null, contentValues);
         return getUriForId(insert, Uri.withAppendedPath(CONTENT_URI, "attendees"));
     }
 
