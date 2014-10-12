@@ -41,16 +41,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import pl.mobilization.organizuj.to.client.R;
 import pl.mobilization.organizuj.to.json.Attendee;
-import pl.mobilization.organizuj.to.organizujto.R;
 
 
 public class MainActivity extends ActionBarActivity implements View.OnClickListener, LoaderManager.LoaderCallbacks<Cursor> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MainActivity.class);
     private static final int ATTENDEE_LOADER = 1;
-    private static final String[] COLUMNS = {AttendeesDBOpenHelper.COLUMN_ISPRESENT, AttendeesDBOpenHelper.COLUMN_FNAME, AttendeesDBOpenHelper.COLUMN_LNAME} ;
-    private static final int[] FIELDS = new int[]{ R.id.present, R.id.first_name, R.id.last_name};
+    private static final String[] COLUMNS = {AttendeesDBOpenHelper.COLUMN_ISPRESENT, AttendeesDBOpenHelper.COLUMN_FNAME, AttendeesDBOpenHelper.COLUMN_LNAME, AttendeesDBOpenHelper.COLUMN_EMAIL, AttendeesDBOpenHelper.COLUMN_TYPE} ;
+    private static final int[] FIELDS = new int[]{ R.id.present, R.id.first_name, R.id.last_name, R.id.email, R.id.type};
     private AttendeesDBOpenHelper attendeesDBOpenHelper;
     private SQLiteDatabase writableDatabase;
     private ListView listView;
