@@ -76,8 +76,10 @@ public class UpdateAttendanceIntentService extends IntentService {
             return;
         }
         String[] selectionArgs = new String[] {id, local} ;
-        attendeesDBOpenHelper.getWritableDatabase().rawQuery("UPDATE " + AttendeesDBOpenHelper.TABLE_NAME + " SET " + AttendeesDBOpenHelper.COLUMN_LOCAL + " = ?", selectionArgs);
-
+        attendeesDBOpenHelper.getWritableDatabase().rawQuery("UPDATE " + AttendeesDBOpenHelper.TABLE_NAME +
+                " SET " + AttendeesDBOpenHelper.COLUMN_ISPRESENT + " = ?, " +
+                ""+AttendeesDBOpenHelper.COLUMN_NEEDSUPDATE +"=1 " +
+                "WHERE "+AttendeesDBOpenHelper.COLUMN_ID +"  = ?", selectionArgs);
 
         Connection connect = Jsoup.connect(String.format("http://organizuj.to/o/events/mobilization-4/guests/%s/is_present", id));
 
@@ -101,11 +103,17 @@ public class UpdateAttendanceIntentService extends IntentService {
 
             String body = response4.body();
             Guest guest = new Gson().fromJson(body, Guest.class);
-            if(!id.equals(guest.id) || guest.is_present == false)
-                LOGGER.warn("Response {} does not match the request {} {}",guest, id, local);
+            if(!id.equals(guest.id) || guest.is_present == false) {
+                LOGGER.warn("Response {} does not match the request {} {}", guest, id, local);
+                return;
+            }
         } catch (IOException e) {
             LOGGER.error("IOException while updating guest", e);
         }
+
+        attendeesDBOpenHelper.getWritableDatabase().rawQuery("UPDATE " + AttendeesDBOpenHelper.TABLE_NAME +
+                " SET "+AttendeesDBOpenHelper.COLUMN_NEEDSUPDATE +"=0 " +
+                "WHERE "+AttendeesDBOpenHelper.COLUMN_ID +"  = ?", selectionArgs);
     }
 
     @Override

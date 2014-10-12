@@ -1,5 +1,6 @@
 package pl.mobilization.organizuj.to;
 
+import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
@@ -15,6 +16,7 @@ import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -22,6 +24,7 @@ import android.widget.ListView;
 
 import com.google.gson.Gson;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -97,6 +100,13 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         FIELDS,           // Layout fields to use
                         0                    // No flags
                 ) {
+            @Override
+            public View newView(Context context, Cursor cursor, ViewGroup parent) {
+                View view = super.newView(context, cursor, parent);
+                int ispresent = cursor.getInt(cursor.getColumnIndex(AttendeesDBOpenHelper.COLUMN_ISPRESENT));
+                view.setTag(BooleanUtils.toBoolean(ispresent));
+                return view;
+            }
         };
 
         adapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
@@ -116,7 +126,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 LOGGER.debug("onItemClick on view {} at {} on id {}", view, position, id);
-                //UpdateAttendanceIntentService.startActionCheckin(this, id, );
+                Boolean tag = (Boolean)view.getTag();
+
+                CheckBox present = (CheckBox) view.findViewById(R.id.present);
+                view.setTag(BooleanUtils.toBoolean(BooleanUtils.negate(tag)));
+                present.setChecked(BooleanUtils.isFalse(tag));
+                UpdateAttendanceIntentService.startActionCheckin(MainActivity.this, Long.toString(id), BooleanUtils.toStringTrueFalse(BooleanUtils.isFalse(tag)));
 
             }
         });
@@ -229,7 +244,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
                         writableDatabase.beginTransaction();
 
-                        SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO ATTENDEES (%s, %s, %s, %s, %s, %s ) VALUES (?, ?, ?, ?, ?, ?)", AttendeesDBOpenHelper.COLUMN_ID, AttendeesDBOpenHelper.COLUMN_FNAME, AttendeesDBOpenHelper.COLUMN_LNAME, AttendeesDBOpenHelper.COLUMN_ISPRESENT, AttendeesDBOpenHelper.COLUMN_EMAIL, AttendeesDBOpenHelper.COLUMN_TYPE));
+                        SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO ATTENDEES " +
+                                "(%s, %s, %s, %s, %s, %s, %s) " +
+                                "VALUES (?, ?, ?, ?, ?, ?)",
+                                AttendeesDBOpenHelper.COLUMN_ID,
+                                AttendeesDBOpenHelper.COLUMN_FNAME,
+                                AttendeesDBOpenHelper.COLUMN_LNAME,
+                                AttendeesDBOpenHelper.COLUMN_ISPRESENT,
+                                AttendeesDBOpenHelper.COLUMN_EMAIL,
+                                AttendeesDBOpenHelper.COLUMN_TYPE));
+
                         for(Attendee attendee: attendees) {
                             sqLiteStatement.clearBindings();
                             sqLiteStatement.bindLong(1, attendee.id);
@@ -238,8 +262,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                             sqLiteStatement.bindLong(4, attendee.is_present ? 1 : 0);
                             sqLiteStatement.bindString(5, StringUtils.defaultString(attendee.email));
                             sqLiteStatement.bindString(6, StringUtils.defaultString(attendee.type, "Attendee"));
-
-
                             sqLiteStatement.execute();
                         }
                         writableDatabase.setTransactionSuccessful();
