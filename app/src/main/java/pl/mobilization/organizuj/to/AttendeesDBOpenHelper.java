@@ -12,11 +12,8 @@ public class AttendeesDBOpenHelper extends SQLiteOpenHelper {
 
     public static final String TABLE_NAME = "Attendees";
     private static final String DATABASE_NAME = TABLE_NAME + ".db";
-<<<<<<< HEAD
     private static final int DATABASE_VERSION = 11;
-=======
-    private static final int DATABASE_VERSION = 10;
->>>>>>> 23195d84ee1042180f56c1402ec584f7aaac207b
+
 
     public  static final String COLUMN_ID = "_id";
     public  static final String COLUMN_FNAME = "first_name";
@@ -31,7 +28,6 @@ public class AttendeesDBOpenHelper extends SQLiteOpenHelper {
             COLUMN_FNAME+" text,"+
             COLUMN_LNAME + " text," +
             COLUMN_ISPRESENT + " boolean not null default false," +
-            COLUMN_EMAIL + " text not null," +
             COLUMN_NEEDSUPDATE + " boolean not null default false," +
             COLUMN_EMAIL + " text," +
             COLUMN_TYPE + " text default 'Attendee'" +
