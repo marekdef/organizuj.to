@@ -10,6 +10,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
+import org.apache.commons.lang3.StringUtils;
+
 import pl.mobilization.organizuj.to.client.R;
 
 public class LoginActivity extends ActionBarActivity implements View.OnClickListener {
@@ -64,7 +66,7 @@ public class LoginActivity extends ActionBarActivity implements View.OnClickList
     protected void onResume() {
         super.onResume();
         SharedPreferences pref = getSharedPreferences(getString(R.string.shared_pref), MODE_PRIVATE);
-        if (!pref.getString(getString(R.string.loginPropKey), "").isEmpty()){
+        if (StringUtils.isNoneEmpty(pref.getString(getString(R.string.loginPropKey), ""))){
             startMainActivity();
         }
     }

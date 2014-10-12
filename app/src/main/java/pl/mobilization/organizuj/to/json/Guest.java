@@ -9,7 +9,7 @@ import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
  */
 public class Guest {
     @SerializedName(value = "guest_id")
-    public String id;
+    public int id;
     public boolean is_present;
 
     @Override

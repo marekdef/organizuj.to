@@ -1,6 +1,7 @@
 package pl.mobilization.organizuj.to;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -20,6 +21,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -27,6 +29,7 @@ import android.widget.ListView;
 
 import com.google.gson.Gson;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.jsoup.Connection;
@@ -107,14 +110,28 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         FIELDS,           // Layout fields to use
                         0                    // No flags
                 ) {
+            @Override
+            public View newView(Context context, Cursor cursor, ViewGroup parent) {
+                View view = super.newView(context, cursor, parent);
+                Object tag = view.getTag();
+
+                if(tag == null) {
+                    int ispresent = cursor.getInt(cursor.getColumnIndex(AttendeesDBOpenHelper.COLUMN_ISPRESENT));
+                    view.setTag(BooleanUtils.toBoolean(ispresent));
+                }
+
+                return view;
+            }
         };
 
         adapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
             @Override
             public boolean setViewValue(View view, Cursor cursor, int i) {
                 if(view.getId() == R.id.present) {
-                    ((CheckBox)view).setChecked(cursor.getInt(i) == 1);
-                    ((CheckBox)view).setText("") ;
+
+//                    ((CheckBox)view).setChecked(cursor.getInt(i) == 1);
+                    ((CheckBox)view).setChecked(BooleanUtils.toBoolean(String.valueOf(((View) view.getParent()).getTag())));
+                    ((CheckBox)view).setText("");
                     return true;
                 }
                 return false;
@@ -126,8 +143,19 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 LOGGER.debug("onItemClick on view {} at {} on id {}", view, position, id);
+                Boolean tag = (Boolean)view.getTag();
+                tag = BooleanUtils.negate(tag);
+                CheckBox present = (CheckBox) view.findViewById(R.id.present);
+                view.setTag(tag);
+                present.setChecked(tag);
 
+                Cursor cursor = writableDatabase.rawQuery("UPDATE " + AttendeesDBOpenHelper.TABLE_NAME +
+                                " SET " + AttendeesDBOpenHelper.COLUMN_NEEDSUPDATE + " = 1, " +
+                                AttendeesDBOpenHelper.COLUMN_ISPRESENT + " = ? " +
+                                "WHERE " + AttendeesDBOpenHelper.COLUMN_ID + " = ?",
+                        new String[]{BooleanUtils.toStringTrueFalse(tag), String.valueOf(id)});
 
+                 UpdateAttendanceIntentService.startActionCheckin(MainActivity.this);
             }
         });
 
@@ -177,11 +205,11 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         Elements elementsByAttributeValue = document.getElementsByAttributeValue("name", "authenticity_token");
                         Element element = elementsByAttributeValue.get(0);
                         String authenticity_token = element.val();
+                        dataStorage.storeToken(authenticity_token);
 
                         Connection.Response response = connect.response();
 
                         Map<String, String> cookies = response.cookies();
-
 
                         Connection.Response response2 = connect2.
                                 data("authenticity_token", authenticity_token).
@@ -217,7 +245,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         dataStorage.storeCookies(cookies);
                         dataStorage.storeCSRF(csrf);
                         dataStorage.storeRelic(newRelicId);
-                        dataStorage.storeToken(authenticity_token);
+
 
                         Connection.Response response4 = connect4.data("authenticity_token", authenticity_token).
                                 ignoreContentType(true).
@@ -240,7 +268,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
                         writableDatabase.beginTransaction();
 
-                        SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO ATTENDEES (%s, %s, %s, %s, %s, %s ) VALUES (?, ?, ?, ?, ?, ?)", AttendeesDBOpenHelper.COLUMN_ID, AttendeesDBOpenHelper.COLUMN_FNAME, AttendeesDBOpenHelper.COLUMN_LNAME, AttendeesDBOpenHelper.COLUMN_ISPRESENT, AttendeesDBOpenHelper.COLUMN_EMAIL, AttendeesDBOpenHelper.COLUMN_TYPE));
+                        SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO ATTENDEES " +
+                                "(%s, %s, %s, %s, %s, %s ) " +
+                                "VALUES (?, ?, ?, ?, ?, ?)",
+                                AttendeesDBOpenHelper.COLUMN_ID,
+                                AttendeesDBOpenHelper.COLUMN_FNAME,
+                                AttendeesDBOpenHelper.COLUMN_LNAME,
+                                AttendeesDBOpenHelper.COLUMN_ISPRESENT,
+                                AttendeesDBOpenHelper.COLUMN_EMAIL,
+                                AttendeesDBOpenHelper.COLUMN_TYPE));
+
                         for(Attendee attendee: attendees) {
                             sqLiteStatement.clearBindings();
                             sqLiteStatement.bindLong(1, attendee.id);
@@ -283,8 +320,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         selectionArgs = new String[] {String.format("%%%s%%", split[0]), String.format("%%%s%%", split[1])};
                         selection = AttendeesDBOpenHelper.COLUMN_FNAME + " LIKE ? AND " + AttendeesDBOpenHelper.COLUMN_LNAME +"  LIKE ?";
                     } else {
-                        selection = AttendeesDBOpenHelper.COLUMN_FNAME + " LIKE ? OR " + AttendeesDBOpenHelper.COLUMN_LNAME +"  LIKE ?";
-                        selectionArgs = new String[] {String.format("%%%s%%", filter), String.format("%%%s%%", filter)};
+                        selection = AttendeesDBOpenHelper.COLUMN_FNAME + " LIKE ? OR " + AttendeesDBOpenHelper.COLUMN_LNAME +"  LIKE ? OR " + AttendeesDBOpenHelper.COLUMN_EMAIL + " LIKE ?" ;
+                        selectionArgs = new String[] {String.format("%%%s%%", filter), String.format("%%%s%%", filter), String.format("%%%s%%", filter)};
                     }
                 }
                 return new CursorLoader(this, AttendeesProvider.ATTENDEES_URI, null, selection, selectionArgs, null);

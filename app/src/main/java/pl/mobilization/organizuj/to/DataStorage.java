@@ -29,7 +29,6 @@ public class DataStorage {
     private final SharedPreferences sharedPreferences;
     private final SharedPreferences sharedPreferencesCookies;
 
-    private String authenticity_token;
     private String csrf;
     private String newRelicId;
     private Map<String, String>  cookies = new HashMap<String, String>();;
@@ -39,13 +38,15 @@ public class DataStorage {
         sharedPreferences = context.getSharedPreferences("Organizuj.to", Context.MODE_PRIVATE);
         sharedPreferencesCookies = context.getSharedPreferences("Organizuj.to.cookies", Context.MODE_PRIVATE);
 
-        authenticity_token = sharedPreferences.getString(AUTHENTICITY_TOKEN, null);
+        authenticityToken = sharedPreferences.getString(AUTHENTICITY_TOKEN, null);
         csrf = sharedPreferences.getString(CSRF, null);
         newRelicId = sharedPreferences.getString(NEW_RELIC_ID, null);
 
+        convertSP2Cookies();
+    }
 
+    private void convertSP2Cookies() {
         Map<String, ?> all = sharedPreferencesCookies.getAll();
-
 
         for(Map.Entry<String, ?> set: all.entrySet()) {
             cookies.put(set.getKey(),String.valueOf(set.getValue()));
@@ -60,16 +61,19 @@ public class DataStorage {
         sharedPreferences.edit().putString(key, value).commit();
     }
 
-    public void storeToken(String value) {
-        storeValue(AUTHENTICITY_TOKEN, value);
+    public void storeToken(String authenticity_token) {
+        this.authenticityToken = authenticity_token;
+        storeValue(AUTHENTICITY_TOKEN, authenticity_token);
     }
 
-    public void storeCSRF(String value) {
-        storeValue(CSRF, value);
+    public void storeCSRF(String csrf) {
+        this.csrf = csrf;
+        storeValue(CSRF, csrf);
     }
 
-    public void storeRelic(String value) {
-        storeValue(NEW_RELIC_ID, value);
+    public void storeRelic(String newRelicId) {
+        this.newRelicId = newRelicId;
+        storeValue(NEW_RELIC_ID, newRelicId);
     }
 
     public void storeCookies(Map<String, String> cookies) {
