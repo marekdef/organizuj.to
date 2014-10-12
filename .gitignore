@@ -28,3 +28,6 @@ proguard/
 #ideea
 *.iml
 .idea/
+
+# passwords
+app/src/main/res/values/password.xml
