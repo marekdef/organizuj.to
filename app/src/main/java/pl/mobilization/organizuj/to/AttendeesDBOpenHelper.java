@@ -12,7 +12,7 @@ public class AttendeesDBOpenHelper extends SQLiteOpenHelper {
 
     public static final String TABLE_NAME = "Attendees";
     private static final String DATABASE_NAME = TABLE_NAME + ".db";
-    private static final int DATABASE_VERSION = 8;
+    private static final int DATABASE_VERSION = 10;
 
     public  static final String COLUMN_ID = "_id";
     public  static final String COLUMN_FNAME = "first_name";
@@ -25,11 +25,12 @@ public class AttendeesDBOpenHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_CREATE = "CREATE TABLE " + TABLE_NAME.toUpperCase() +
             "( "+COLUMN_ID +" integer primary key, "+
-            COLUMN_FNAME+" text not null,"+
-            COLUMN_LNAME + " text not null," +
+            COLUMN_FNAME+" text,"+
+            COLUMN_LNAME + " text," +
             COLUMN_ISPRESENT + " boolean not null default false," +
             COLUMN_LOCAL + " boolean not null default false," +
             COLUMN_NEEDSUPDATE + " boolean not null default false," +
+            COLUMN_EMAIL + " text," +
             COLUMN_TYPE + " text default 'Attendee'" +
             ")";
 
