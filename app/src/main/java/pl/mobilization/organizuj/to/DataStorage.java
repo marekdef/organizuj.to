@@ -12,6 +12,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -26,33 +27,28 @@ public class DataStorage {
 
     private static boolean invalid = false;
     private final SharedPreferences sharedPreferences;
+    private final SharedPreferences sharedPreferencesCookies;
 
     private String authenticity_token;
     private String csrf;
     private String newRelicId;
-    private Map<String, String> cookies;
+    private Map<String, String>  cookies = new HashMap<String, String>();;
     private String authenticityToken;
 
     public DataStorage(Context context) {
         sharedPreferences = context.getSharedPreferences("Organizuj.to", Context.MODE_PRIVATE);
+        sharedPreferencesCookies = context.getSharedPreferences("Organizuj.to.cookies", Context.MODE_PRIVATE);
 
         authenticity_token = sharedPreferences.getString(AUTHENTICITY_TOKEN, null);
         csrf = sharedPreferences.getString(CSRF, null);
         newRelicId = sharedPreferences.getString(NEW_RELIC_ID, null);
 
-        String cookieserialized = sharedPreferences.getString(COOKIES, null);
 
-        if(!TextUtils.isEmpty(cookieserialized))
-        try {
-            ObjectInputStream objectInputStream = new ObjectInputStream(new ByteArrayInputStream(cookieserialized.getBytes()));
-            cookies = (Map<String, String>) objectInputStream.readObject();
-            objectInputStream.close();
-        } catch (IOException e) {
-            LOGGER.error("IOException while deserializing cookies", e);
-        } catch (ClassNotFoundException e) {
-            LOGGER.error("ClassNotFoundException while deserializing cookies", e);
-        } catch (ClassCastException e) {
-            LOGGER.error("ClassNotFoundException while deserializing cookies", e);
+        Map<String, ?> all = sharedPreferencesCookies.getAll();
+
+
+        for(Map.Entry<String, ?> set: all.entrySet()) {
+            cookies.put(set.getKey(),String.valueOf(set.getValue()));
         }
     }
 
@@ -76,17 +72,14 @@ public class DataStorage {
         storeValue(NEW_RELIC_ID, value);
     }
 
-    public void storeCookies(Map<String, String> value) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try {
-            ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(value);
-            oos.close();
-            bos.close();
-        } catch (IOException e) {
-            LOGGER.error("IOException while serializing cookies", e);
+    public void storeCookies(Map<String, String> cookies) {
+        this.cookies = cookies;
+        SharedPreferences.Editor edit = this.sharedPreferencesCookies.edit();
+        edit.clear();
+        for(Map.Entry<String, String> entry : cookies.entrySet()) {
+            edit.putString(entry.getKey(), entry.getValue());
         }
-        storeValue(COOKIES, bos.toString());
+        edit.commit();
     }
 
     public Map<String, String> getCookies() {
