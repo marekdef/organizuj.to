@@ -2,6 +2,8 @@ package pl.mobilization.organizuj.to.json;
 
 import com.google.gson.annotations.SerializedName;
 
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+
 /**
  * Created by marekdef on 08.10.14.
  */
@@ -14,6 +16,11 @@ public class Attendee {
     @SerializedName(value = "guest_type_description")
     public String type;
     public String url;
+
+    @Override
+    public String toString() {
+        return new ReflectionToStringBuilder(this).toString();
+    }
 
     @Override
     public boolean equals(Object o) {

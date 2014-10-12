@@ -57,6 +57,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     private SimpleCursorAdapter adapter;
     private EditText editTextFilter;
+    private DataStorage dataStorage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +68,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
         viewById.setOnClickListener(this);
 
-        editTextFilter = (EditText) findViewById(R.id.editTextFilter);
+        dataStorage = new DataStorage(this);
+
+        editTextFilter = (EditText) findViewById(R.id.filter);
 
         editTextFilter.addTextChangedListener(new TextWatcher() {
             @Override
@@ -116,27 +119,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         });
 
         listView.setAdapter(adapter);
-        listView.setClickable(true);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 LOGGER.debug("onItemClick on view {} at {} on id {}", view, position, id);
-//                Intent intent = new Intent();
-//                intent.putExtra(ID)
-//                startService(intent);
 
-            }
-        });
 
-        listView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                LOGGER.debug("onItemSelected {} {} {}", view, position, id);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                LOGGER.debug("onNothingSelected");
             }
         });
 
@@ -214,55 +202,30 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
                         String text = document3.outerHtml();
 
-                        int indexOf = text.indexOf("xpid:\"");
+                        int startOfRelic = text.indexOf("xpid:\"");
 
-                        String newRelicId = text.substring(indexOf + 6, indexOf + 50);
-                        indexOf = newRelicId.indexOf('"');
-                        if(indexOf != -1) {
-                            newRelicId = newRelicId.substring(0, indexOf);
+                        String newRelicId = text.substring(startOfRelic + 6, startOfRelic + 50);
+                        int endOfRelic = newRelicId.indexOf('"');
+                        if(endOfRelic != -1) {
+                            newRelicId = newRelicId.substring(0, endOfRelic);
                         }
 
-
-
-
+                        dataStorage.storeCookies(cookies);
+                        dataStorage.storeCSRF(csrf);
+                        dataStorage.storeRelic(newRelicId);
+                        dataStorage.storeToken(authenticity_token);
 
                         Connection.Response response4 = connect4.data("authenticity_token", authenticity_token).
                                 ignoreContentType(true).
                                 header("Accept", "application/json, text/javascript, */*; q=0.01").
-                            header("Accept-Encoding", "gzip,deflate,sdch").
-                                 referrer("http://organizuj.to/o/events/mobilization-4/attendances").
-                                   header("Host", "organizuj.to").
+                                header("Accept-Encoding", "gzip,deflate,sdch").
+                                referrer("http://organizuj.to/o/events/mobilization-4/attendances").
+                                header("Host", "organizuj.to").
                                 header("X-CSRF-Token", csrf).
                                 header("X-Requested-With", "XMLHttpRequest").
                                 header("X-NewRelic-ID", newRelicId).
                                 cookies(cookies).
                                 method(Connection.Method.GET).execute();
-
-
-                        /*
-                        DefaultHttpClient defaultHttpClient = new DefaultHttpClient();
-                        CookieStore cookieStore = defaultHttpClient.getCookieStore();
-                        for (String key : cookies.keySet()) {
-                            cookieStore.addCookie(new BasicClientCookie(key, cookies.get(key)));;
-                        }
-                        HttpGet get = new HttpGet("http://organizuj.to/o/events/mobilization-4/attendances?agenda_day_id=1&sort_by=id&order=asc&authenticity_token="+ URLEncoder.encode(authenticity_token,"UTF-8"));
-                        */
-                        //get.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
-                        /*
-                                get.addHeader("Accept-Encoding", "gzip,deflate,sdch");
-                                get.addHeader("Host", "organizuj.to");
-                                get.addHeader("X-CSRF-Token", csrf);
-                                get.addHeader("X-Requested-With", "XMLHttpRequest");
-                                get.addHeader("X-NewRelic-ID", newRelicId);
-                                get.addHeader("Referer","http://organizuj.to/o/events/mobilization-4/attendances");
-
-
-
-
-                        HttpResponse response4 = defaultHttpClient.execute(get);
-
-                        InputStream content = response4.getEntity().getContent();
-                        */
 
                         String body = response4.body();
 
@@ -310,8 +273,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         selectionArgs = new String[] {String.format("%%%s%%", filter), String.format("%%%s%%", filter)};
                     }
                 }
-
-                LOGGER.info("Selection {} args {}", selection, new ReflectionToStringBuilder(selectionArgs).toString());
                 return new CursorLoader(this, AttendeesProvider.ATTENDEES_URI, null, selection, selectionArgs, null);
         }
         return null;

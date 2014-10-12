@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="pl.mobilization.organizuj.to.organizujto" >
+    package="pl.mobilization.organizuj.to.client" >
 
     <application
         android:allowBackup="true"
@@ -16,10 +16,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <provider
-            android:authorities="pl.mobilization.organizuj.to.attendees"
             android:name="pl.mobilization.organizuj.to.AttendeesProvider"
-         />
+            android:authorities="pl.mobilization.organizuj.to.attendees" />
+
+        <service
+            android:name="pl.mobilization.organizuj.to.UpdateAttendanceIntentService"
+            android:exported="false" >
+        </service>
     </application>
+
     <uses-permission android:name="android.permission.INTERNET" />
+
 </manifest>
