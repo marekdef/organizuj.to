@@ -2,6 +2,7 @@ package pl.mobilization.organizuj.to;
 
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -156,8 +157,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
-        final String username = getResources().getString(R.string.username);
-        final String password = getResources().getString(R.string.password);
+        SharedPreferences pref = getSharedPreferences(getString(R.string.shared_pref), MODE_PRIVATE);
+        final String username = pref.getString(getString(R.string.loginPropKey), "");
+        final String password = pref.getString(getString(R.string.passwordPropKey), "");
 
         if(v.getId() == R.id.button) {
             new Thread() {
@@ -253,6 +255,13 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         }
                         writableDatabase.setTransactionSuccessful();
                         writableDatabase.endTransaction();
+                        listView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                getSupportLoaderManager().restartLoader(ATTENDEE_LOADER, null, MainActivity.this);
+                                adapter.notifyDataSetChanged();
+                            }
+                        });
                     } catch (IOException e) {
                         LOGGER.error("IOException while inserting Attendees", e);
                     }
