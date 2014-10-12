@@ -1,8 +1,11 @@
 package pl.mobilization.organizuj.to;
 
-import android.content.Context;
+import android.content.ContentValues;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteStatement;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -13,10 +16,10 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -24,10 +27,11 @@ import android.widget.ListView;
 
 import com.google.gson.Gson;
 
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
+import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -35,6 +39,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import pl.mobilization.organizuj.to.client.R;
@@ -100,13 +107,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         FIELDS,           // Layout fields to use
                         0                    // No flags
                 ) {
-            @Override
-            public View newView(Context context, Cursor cursor, ViewGroup parent) {
-                View view = super.newView(context, cursor, parent);
-                int ispresent = cursor.getInt(cursor.getColumnIndex(AttendeesDBOpenHelper.COLUMN_ISPRESENT));
-                view.setTag(BooleanUtils.toBoolean(ispresent));
-                return view;
-            }
         };
 
         adapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
@@ -126,12 +126,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 LOGGER.debug("onItemClick on view {} at {} on id {}", view, position, id);
-                Boolean tag = (Boolean)view.getTag();
 
-                CheckBox present = (CheckBox) view.findViewById(R.id.present);
-                view.setTag(BooleanUtils.toBoolean(BooleanUtils.negate(tag)));
-                present.setChecked(BooleanUtils.isFalse(tag));
-                UpdateAttendanceIntentService.startActionCheckin(MainActivity.this, Long.toString(id), BooleanUtils.toStringTrueFalse(BooleanUtils.isFalse(tag)));
 
             }
         });
@@ -162,8 +157,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
-        final String username = getResources().getString(R.string.username);
-        final String password = getResources().getString(R.string.password);
+        SharedPreferences pref = getSharedPreferences(getString(R.string.shared_pref), MODE_PRIVATE);
+        final String username = pref.getString(getString(R.string.loginPropKey), "");
+        final String password = pref.getString(getString(R.string.passwordPropKey), "");
 
         if(v.getId() == R.id.button) {
             new Thread() {
@@ -244,16 +240,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
                         writableDatabase.beginTransaction();
 
-                        SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO ATTENDEES " +
-                                "(%s, %s, %s, %s, %s, %s, %s) " +
-                                "VALUES (?, ?, ?, ?, ?, ?)",
-                                AttendeesDBOpenHelper.COLUMN_ID,
-                                AttendeesDBOpenHelper.COLUMN_FNAME,
-                                AttendeesDBOpenHelper.COLUMN_LNAME,
-                                AttendeesDBOpenHelper.COLUMN_ISPRESENT,
-                                AttendeesDBOpenHelper.COLUMN_EMAIL,
-                                AttendeesDBOpenHelper.COLUMN_TYPE));
-
+                        SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO ATTENDEES (%s, %s, %s, %s, %s, %s ) VALUES (?, ?, ?, ?, ?, ?)", AttendeesDBOpenHelper.COLUMN_ID, AttendeesDBOpenHelper.COLUMN_FNAME, AttendeesDBOpenHelper.COLUMN_LNAME, AttendeesDBOpenHelper.COLUMN_ISPRESENT, AttendeesDBOpenHelper.COLUMN_EMAIL, AttendeesDBOpenHelper.COLUMN_TYPE));
                         for(Attendee attendee: attendees) {
                             sqLiteStatement.clearBindings();
                             sqLiteStatement.bindLong(1, attendee.id);
@@ -262,10 +249,19 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                             sqLiteStatement.bindLong(4, attendee.is_present ? 1 : 0);
                             sqLiteStatement.bindString(5, StringUtils.defaultString(attendee.email));
                             sqLiteStatement.bindString(6, StringUtils.defaultString(attendee.type, "Attendee"));
+
+
                             sqLiteStatement.execute();
                         }
                         writableDatabase.setTransactionSuccessful();
                         writableDatabase.endTransaction();
+                        listView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                getSupportLoaderManager().restartLoader(ATTENDEE_LOADER, null, MainActivity.this);
+                                adapter.notifyDataSetChanged();
+                            }
+                        });
                     } catch (IOException e) {
                         LOGGER.error("IOException while inserting Attendees", e);
                     }

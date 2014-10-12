@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <string name="app_name">Organizuj.to</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="title_activity_login">LoginActivity</string>
+    <string name="login">login</string>
+    <string name="shared_pref">credentials</string>
+    <string name="loginPropKey">login</string>
+    <string name="passwordPropKey">password</string>
+
 </resources>
