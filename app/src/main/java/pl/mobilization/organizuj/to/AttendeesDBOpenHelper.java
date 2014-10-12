@@ -28,6 +28,7 @@ public class AttendeesDBOpenHelper extends SQLiteOpenHelper {
             COLUMN_FNAME+" text,"+
             COLUMN_LNAME + " text," +
             COLUMN_ISPRESENT + " boolean not null default false," +
+            COLUMN_EMAIL + " text not null," +
             COLUMN_LOCAL + " boolean not null default false," +
             COLUMN_NEEDSUPDATE + " boolean not null default false," +
             COLUMN_EMAIL + " text," +
