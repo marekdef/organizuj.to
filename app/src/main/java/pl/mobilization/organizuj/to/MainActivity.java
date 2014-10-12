@@ -26,9 +26,11 @@ import android.widget.ListView;
 
 import com.google.gson.Gson;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
+import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -236,13 +238,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
                         writableDatabase.beginTransaction();
 
-                        SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO ATTENDEES (%s, %s, %s, %s ) VALUES (?, ?, ?, ? )", AttendeesDBOpenHelper.COLUMN_ID, AttendeesDBOpenHelper.COLUMN_FNAME, AttendeesDBOpenHelper.COLUMN_LNAME, AttendeesDBOpenHelper.COLUMN_ISPRESENT));
+                        SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO ATTENDEES (%s, %s, %s, %s, %s, %s ) VALUES (?, ?, ?, ?, ?, ?)", AttendeesDBOpenHelper.COLUMN_ID, AttendeesDBOpenHelper.COLUMN_FNAME, AttendeesDBOpenHelper.COLUMN_LNAME, AttendeesDBOpenHelper.COLUMN_ISPRESENT, AttendeesDBOpenHelper.COLUMN_EMAIL, AttendeesDBOpenHelper.COLUMN_TYPE));
                         for(Attendee attendee: attendees) {
                             sqLiteStatement.clearBindings();
-                            sqLiteStatement.bindLong(1, attendee.id );
-                            sqLiteStatement.bindString(2, attendee.first_name );
-                            sqLiteStatement.bindString(3, attendee.last_name );
+                            sqLiteStatement.bindLong(1, attendee.id);
+                            sqLiteStatement.bindString(2, StringUtils.defaultString(attendee.first_name));
+                            sqLiteStatement.bindString(3, StringUtils.defaultString(attendee.last_name));
                             sqLiteStatement.bindLong(4, attendee.is_present ? 1 : 0);
+                            sqLiteStatement.bindString(5, StringUtils.defaultString(attendee.email));
+                            sqLiteStatement.bindString(6, StringUtils.defaultString(attendee.type, "Attendee"));
+
 
                             sqLiteStatement.execute();
                         }
