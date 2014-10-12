@@ -3,7 +3,7 @@ package pl.mobilization.organizuj.to;
 import android.app.IntentService;
 import android.content.Intent;
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.text.TextUtils;
 
 import com.google.gson.Gson;
 
@@ -43,11 +43,11 @@ public class UpdateAttendanceIntentService extends IntentService {
      * @see IntentService
      */
     // TODO: Customize helper method
-    public static void startActionFoo(Context context, String param1, String param2) {
+    public static void startActionCheckin(Context context, String id, String presence) {
         Intent intent = new Intent(context, UpdateAttendanceIntentService.class);
         intent.setAction(ACTION_UPDATE);
-        intent.putExtra(ATTENDEE_ID, param1);
-        intent.putExtra(ATTENDEE_PRESENCE, param2);
+        intent.putExtra(ATTENDEE_ID, id);
+        intent.putExtra(ATTENDEE_PRESENCE, presence);
         context.startService(intent);
     }
     public UpdateAttendanceIntentService() {
@@ -61,7 +61,7 @@ public class UpdateAttendanceIntentService extends IntentService {
             if (ACTION_UPDATE.equals(action)) {
                 final String param1 = intent.getStringExtra(ATTENDEE_ID);
                 final String param2 = intent.getStringExtra(ATTENDEE_PRESENCE);
-                handleActionFoo(param1, param2);
+                handleActionCheckIn(param1, param2);
             }
         }
     }
@@ -70,9 +70,13 @@ public class UpdateAttendanceIntentService extends IntentService {
      * Handle action Foo in the provided background thread with the provided
      * parameters.
      */
-    private void handleActionFoo(String id, String local) {
+    private void handleActionCheckIn(String id, String local) {
+        if(TextUtils.isEmpty(id) || TextUtils.isEmpty(local)) {
+            LOGGER.warn("handleActionCheckIn - supplied empty params id>{}< local>{}<", id, local);
+            return;
+        }
         String[] selectionArgs = new String[] {id, local} ;
-        attendeesDBOpenHelper.getWritableDatabase().rawQuery("UPDATE " + AttendeesDBOpenHelper.TABLE_NAME + " SET" + AttendeesDBOpenHelper.COLUMN_LOCAL + " = ?", selectionArgs);
+        attendeesDBOpenHelper.getWritableDatabase().rawQuery("UPDATE " + AttendeesDBOpenHelper.TABLE_NAME + " SET " + AttendeesDBOpenHelper.COLUMN_LOCAL + " = ?", selectionArgs);
 
 
         Connection connect = Jsoup.connect(String.format("http://organizuj.to/o/events/mobilization-4/guests/%s/is_present", id));
@@ -102,15 +106,6 @@ public class UpdateAttendanceIntentService extends IntentService {
         } catch (IOException e) {
             LOGGER.error("IOException while updating guest", e);
         }
-    }
-
-    /**
-     * Handle action Baz in the provided background thread with the provided
-     * parameters.
-     */
-    private void handleActionBaz(String param1, String param2) {
-        // TODO: Handle action Baz
-        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
