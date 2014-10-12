@@ -9,7 +9,6 @@ import android.database.sqlite.SQLiteStatement;
 
 import com.google.gson.Gson;
 
-import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
@@ -19,11 +18,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import pl.mobilization.organizuj.to.json.Attendee;
 import pl.mobilization.organizuj.to.json.Guest;
 
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_ID;
-import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_ISPRESENT;
+import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_REMOTE_PRESENCE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_NEEDSUPDATE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.TABLE_NAME;
 
@@ -76,7 +74,7 @@ public class UpdateAttendanceIntentService extends IntentService {
      */
     private void handleActionCheckIn() {
         Cursor cursor = writableDatabase.query(TABLE_NAME,
-                new String[]{COLUMN_ID, COLUMN_ISPRESENT},
+                new String[]{COLUMN_ID, COLUMN_REMOTE_PRESENCE},
                 COLUMN_NEEDSUPDATE + " = 1 ", null, null, null, null);
 
         int count = cursor.getCount();
@@ -126,11 +124,13 @@ public class UpdateAttendanceIntentService extends IntentService {
 
         SQLiteStatement sqLiteStatement = writableDatabase.compileStatement("UPDATE " + TABLE_NAME  + " " +
                         "SET "+ COLUMN_NEEDSUPDATE +" = 0 " +
+                         COLUMN_REMOTE_PRESENCE + " = ? "+
                         "WHERE "+ COLUMN_ID+" = ?");
 
         for(Map.Entry<Integer, Boolean> response: responses.entrySet()) {
             sqLiteStatement.clearBindings();
-            sqLiteStatement.bindLong(1, response.getKey());
+            sqLiteStatement.bindLong(1, response.getValue() ? 1 : 0);
+            sqLiteStatement.bindLong(2, response.getKey());
 
             sqLiteStatement.execute();
         }
@@ -163,12 +163,17 @@ public class UpdateAttendanceIntentService extends IntentService {
     }
 
     @Override
-    public void onStart(Intent intent, int startId) {
-        super.onStart(intent, startId);
+    public void onCreate() {
+        super.onCreate();
 
         attendeesDBOpenHelper = new AttendeesDBOpenHelper(this);
         writableDatabase = attendeesDBOpenHelper.getWritableDatabase();
         dataStorage = new DataStorage(this);
+    }
+
+    @Override
+    public void onStart(Intent intent, int startId) {
+        super.onStart(intent, startId);
     }
 
 }

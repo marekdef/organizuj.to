@@ -1,12 +1,9 @@
 package pl.mobilization.organizuj.to;
 
-import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteStatement;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -17,7 +14,6 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,15 +22,14 @@ import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.google.gson.Gson;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
-import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -42,21 +37,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 import pl.mobilization.organizuj.to.client.R;
 import pl.mobilization.organizuj.to.json.Attendee;
+
+import static android.widget.AbsListView.CHOICE_MODE_NONE;
+import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_EMAIL;
+import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_FNAME;
+import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_LNAME;
+import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_LOCAL_PRESENCE;
+import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_REMOTE_PRESENCE;
+import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_TYPE;
 
 
 public class MainActivity extends ActionBarActivity implements View.OnClickListener, LoaderManager.LoaderCallbacks<Cursor> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MainActivity.class);
     private static final int ATTENDEE_LOADER = 1;
-    private static final String[] COLUMNS = {AttendeesDBOpenHelper.COLUMN_ISPRESENT, AttendeesDBOpenHelper.COLUMN_FNAME, AttendeesDBOpenHelper.COLUMN_LNAME, AttendeesDBOpenHelper.COLUMN_EMAIL, AttendeesDBOpenHelper.COLUMN_TYPE} ;
-    private static final int[] FIELDS = new int[]{ R.id.present, R.id.first_name, R.id.last_name, R.id.email, R.id.type};
+    private static final String[] COLUMNS = {COLUMN_REMOTE_PRESENCE, COLUMN_LOCAL_PRESENCE, COLUMN_FNAME, COLUMN_LNAME, COLUMN_EMAIL, COLUMN_TYPE} ;
+    private static final int[] FIELDS = new int[]{ R.id.remote, R.id.local, R.id.first_name, R.id.last_name, R.id.email, R.id.type};
     private AttendeesDBOpenHelper attendeesDBOpenHelper;
     private SQLiteDatabase writableDatabase;
     private ListView listView;
@@ -64,6 +65,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     private SimpleCursorAdapter adapter;
     private EditText editTextFilter;
     private DataStorage dataStorage;
+
+    private static Map<String, Integer> COLOR_MAP = new HashMap<String, Integer>();
+
+    static {
+        COLOR_MAP.put("Attendee", 0x00FF00);
+        COLOR_MAP.put("VIP", 0xFF0000);
+        COLOR_MAP.put("Speaker", 0xFF);
+        COLOR_MAP.put("Organizer", 0xFFFF00);
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,7 +111,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         writableDatabase = attendeesDBOpenHelper.getWritableDatabase();
 
         listView = (ListView) findViewById(R.id.listview);
-        listView.setChoiceMode(ListView.CHOICE_MODE_NONE);
+        listView.setChoiceMode(CHOICE_MODE_NONE);
         adapter = new SimpleCursorAdapter(
 
                         this,                // Current context
@@ -110,28 +121,28 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         FIELDS,           // Layout fields to use
                         0                    // No flags
                 ) {
-            @Override
-            public View newView(Context context, Cursor cursor, ViewGroup parent) {
-                View view = super.newView(context, cursor, parent);
-                Object tag = view.getTag();
-
-                if(tag == null) {
-                    int ispresent = cursor.getInt(cursor.getColumnIndex(AttendeesDBOpenHelper.COLUMN_ISPRESENT));
-                    view.setTag(BooleanUtils.toBoolean(ispresent));
-                }
-
-                return view;
-            }
+//            @Override
+//            public View newView(Context context, Cursor cursor, ViewGroup parent) {
+//                View view = super.newView(context, cursor, parent);
+//                View local = view.findViewById(R.id.local);
+//                local.setTag(BooleanUtils.toBooleanObject(cursor.getInt(cursor.getColumnIndex(AttendeesDBOpenHelper.COLUMN_LOCAL_PRESENCE))));
+//                return view;
+//            }
         };
 
         adapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
             @Override
             public boolean setViewValue(View view, Cursor cursor, int i) {
-                if(view.getId() == R.id.present) {
-
-//                    ((CheckBox)view).setChecked(cursor.getInt(i) == 1);
-                    ((CheckBox)view).setChecked(BooleanUtils.toBoolean(String.valueOf(((View) view.getParent()).getTag())));
+                if(view.getId() == R.id.remote || view.getId() == R.id.local) {
+                    ((CheckBox)view).setChecked(cursor.getInt(i) == 1);
                     ((CheckBox)view).setText("");
+                    return true;
+                } else if (view.getId() == R.id.type) {
+                    String type = cursor.getString(i);
+                    Integer color = COLOR_MAP.get(type);
+                    ((View)view.getParent()).setBackgroundColor(color);
+                    view.setBackgroundColor(color);
+                    ((TextView)view).setText(type);
                     return true;
                 }
                 return false;
@@ -143,19 +154,17 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 LOGGER.debug("onItemClick on view {} at {} on id {}", view, position, id);
-                Boolean tag = (Boolean)view.getTag();
-                tag = BooleanUtils.negate(tag);
-                CheckBox present = (CheckBox) view.findViewById(R.id.present);
-                view.setTag(tag);
-                present.setChecked(tag);
+                CheckBox local = (CheckBox) view.findViewById(R.id.local);
 
                 Cursor cursor = writableDatabase.rawQuery("UPDATE " + AttendeesDBOpenHelper.TABLE_NAME +
                                 " SET " + AttendeesDBOpenHelper.COLUMN_NEEDSUPDATE + " = 1, " +
-                                AttendeesDBOpenHelper.COLUMN_ISPRESENT + " = ? " +
+                                COLUMN_LOCAL_PRESENCE + " = ? " +
                                 "WHERE " + AttendeesDBOpenHelper.COLUMN_ID + " = ?",
-                        new String[]{BooleanUtils.toStringTrueFalse(tag), String.valueOf(id)});
+                        new String[]{local.isChecked() ? "0" : "1", String.valueOf(id)});
 
-                 UpdateAttendanceIntentService.startActionCheckin(MainActivity.this);
+                getSupportLoaderManager().restartLoader(ATTENDEE_LOADER, null, MainActivity.this);
+
+                UpdateAttendanceIntentService.startActionCheckin(MainActivity.this);
             }
         });
 
@@ -272,11 +281,11 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                                 "(%s, %s, %s, %s, %s, %s ) " +
                                 "VALUES (?, ?, ?, ?, ?, ?)",
                                 AttendeesDBOpenHelper.COLUMN_ID,
-                                AttendeesDBOpenHelper.COLUMN_FNAME,
-                                AttendeesDBOpenHelper.COLUMN_LNAME,
-                                AttendeesDBOpenHelper.COLUMN_ISPRESENT,
-                                AttendeesDBOpenHelper.COLUMN_EMAIL,
-                                AttendeesDBOpenHelper.COLUMN_TYPE));
+                                COLUMN_FNAME,
+                                COLUMN_LNAME,
+                                COLUMN_REMOTE_PRESENCE,
+                                COLUMN_EMAIL,
+                                COLUMN_TYPE));
 
                         for(Attendee attendee: attendees) {
                             sqLiteStatement.clearBindings();
@@ -296,7 +305,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                             @Override
                             public void run() {
                                 getSupportLoaderManager().restartLoader(ATTENDEE_LOADER, null, MainActivity.this);
-                                adapter.notifyDataSetChanged();
                             }
                         });
                     } catch (IOException e) {
@@ -318,9 +326,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     if(filter.contains(" ")) {
                         String[] split = filter.split(" ", 2);
                         selectionArgs = new String[] {String.format("%%%s%%", split[0]), String.format("%%%s%%", split[1])};
-                        selection = AttendeesDBOpenHelper.COLUMN_FNAME + " LIKE ? AND " + AttendeesDBOpenHelper.COLUMN_LNAME +"  LIKE ?";
+                        selection = COLUMN_FNAME + " LIKE ? AND " + COLUMN_LNAME +"  LIKE ?";
                     } else {
-                        selection = AttendeesDBOpenHelper.COLUMN_FNAME + " LIKE ? OR " + AttendeesDBOpenHelper.COLUMN_LNAME +"  LIKE ? OR " + AttendeesDBOpenHelper.COLUMN_EMAIL + " LIKE ?" ;
+                        selection = COLUMN_FNAME + " LIKE ? OR " + COLUMN_LNAME +"  LIKE ? OR " + COLUMN_EMAIL + " LIKE ?" ;
                         selectionArgs = new String[] {String.format("%%%s%%", filter), String.format("%%%s%%", filter), String.format("%%%s%%", filter)};
                     }
                 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="VIP">#FF0000</color>
+    <color name="Attendee">#FFFFFF</color>
+    <color name="Organizer">#FFFF00</color>
+    <color name="Speaker">#0000FF</color>
+</resources>
