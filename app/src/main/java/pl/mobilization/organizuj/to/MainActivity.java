@@ -1,5 +1,6 @@
 package pl.mobilization.organizuj.to;
 
+import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -20,6 +21,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -72,21 +74,23 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     private static Map<String, Integer> COLOR_MAP = new HashMap<String, Integer>();
 
     static {
-        COLOR_MAP.put("Attendee", 0x00FF00);
-        COLOR_MAP.put("VIP", 0xFF0000);
-        COLOR_MAP.put("Speaker", 0xFF);
-        COLOR_MAP.put("Organizer", 0xFFFF00);
+        COLOR_MAP.put("Attendee", 0xFF00FF00);
+        COLOR_MAP.put("VIP", 0xFFFF0000);
+        COLOR_MAP.put("Speaker", 0xFFFF);
+        COLOR_MAP.put("Organizer", 0xFFFFFF00);
 
     }
+
+    private Button refreshButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        View viewById = findViewById(R.id.button);
+        refreshButton = (Button)findViewById(R.id.button);
 
-        viewById.setOnClickListener(this);
+        refreshButton.setOnClickListener(this);
 
         dataStorage = new DataStorage(this);
 
@@ -198,10 +202,19 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        refreshButton.callOnClick();
+    }
+
+    @Override
     public void onClick(View v) {
         SharedPreferences pref = getSharedPreferences(getString(R.string.shared_pref), MODE_PRIVATE);
         final String username = pref.getString(getString(R.string.loginPropKey), "");
         final String password = pref.getString(getString(R.string.passwordPropKey), "");
+        final ProgressDialog ringProgressDialog = ProgressDialog.show(MainActivity.this, "Please wait ...", "Downloading ...", true);
+
+        ringProgressDialog.setCancelable(true);
 
         if(v.getId() == R.id.button) {
             new Thread() {
@@ -310,10 +323,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                             @Override
                             public void run() {
                                 getSupportLoaderManager().restartLoader(ATTENDEE_LOADER, null, MainActivity.this);
+                                ringProgressDialog.dismiss();
                             }
                         });
                     } catch (IOException e) {
                         LOGGER.error("IOException while inserting Attendees", e);
+                        ringProgressDialog.dismiss();
                     }
                 }
             }.start();

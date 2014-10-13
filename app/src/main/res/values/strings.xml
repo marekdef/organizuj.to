@@ -9,5 +9,6 @@
     <string name="shared_pref">credentials</string>
     <string name="loginPropKey">login</string>
     <string name="passwordPropKey">password</string>
+    <string name="refresh">Odświerz</string>
 
 </resources>

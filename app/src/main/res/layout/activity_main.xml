@@ -4,14 +4,12 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:layout_alignBottom="@+id/editTextFilter"
-    android:layout_alignRight="@+id/editTextFilter"
-    android:layout_alignEnd="@+id/editTextFilter"
-    android:layout_marginRight="92dp">
+    >
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Login"
+        android:text="@string/refresh"
         android:id="@+id/button"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
@@ -25,7 +23,6 @@
         android:hint="name"
         android:ems="10"
         android:id="@+id/filter"
-        android:layout_above="@+id/listview"
         android:layout_toRightOf="@+id/button" />
 
     <ListView
