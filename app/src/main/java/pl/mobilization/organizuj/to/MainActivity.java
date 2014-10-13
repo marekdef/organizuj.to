@@ -128,13 +128,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         FIELDS,           // Layout fields to use
                         0                    // No flags
                 ) {
-//            @Override
-//            public View newView(Context context, Cursor cursor, ViewGroup parent) {
-//                View view = super.newView(context, cursor, parent);
-//                View local = view.findViewById(R.id.local);
-//                local.setTag(BooleanUtils.toBooleanObject(cursor.getInt(cursor.getColumnIndex(AttendeesDBOpenHelper.COLUMN_LOCAL_PRESENCE))));
-//                return view;
-//            }
+
         };
 
         adapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
