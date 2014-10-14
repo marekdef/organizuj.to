@@ -1,8 +1,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:layout_margin="@dimen/margin"
+    android:descendantFocusability="blocksDescendants"
     android:orientation="horizontal"
-    android:descendantFocusability="blocksDescendants">
+    android:padding="@dimen/padding">
 
 
     <CheckBox
@@ -10,61 +12,72 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:clickable="false"
-        android:text=""
-        />
+        android:text="" />
 
     <CheckBox
         android:id="@+id/local"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:clickable="false"
-        android:visibility="visible"
         android:text=""
-        />
+        android:visibility="visible" />
 
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_weight="4"
-        >
+        android:orientation="vertical">
 
-        <TextView
-            android:singleLine="true"
-            android:id="@+id/first_name"
-            android:layout_width="fill_parent"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text=""
-            android:layout_marginRight="5dp"
-            android:layout_weight="1"
-            />
+            android:layout_gravity=""
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/last_name"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="5dp"
-            android:text=""
-            android:layout_weight="1"
-            />
+            <TextView
+                android:id="@+id/first_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="5dp"
+                android:singleLine="true"
+                android:text="First name"
+                android:textAppearance="?android:attr/textAppearanceLarge" />
 
-        <TextView
-            android:singleLine="true"
-            android:id="@+id/email"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:layout_marginRight="5dp"
-            android:layout_weight="1"
-            />
+            <TextView
+                android:id="@+id/last_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="5dp"
+                android:text="Last name"
+                android:textAppearance="?android:attr/textAppearanceLarge" />
 
-        <TextView
-            android:id="@+id/type"
-            android:layout_width="fill_parent"
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text=""
-            android:layout_weight="1"
-            android:background="@color/Organizer"
-            />
+            android:layout_gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/email"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="5dp"
+                android:singleLine="true"
+                android:text="email"
+                android:textAppearance="?android:attr/textAppearanceLarge" />
+
+            <TextView
+                android:id="@+id/type"
+                android:layout_width="@dimen/type_width"
+                android:layout_height="wrap_content"
+                android:text="type"
+                android:textAppearance="?android:attr/textAppearanceLarge" />
+
+        </LinearLayout>
+
+
     </LinearLayout>
 </LinearLayout>

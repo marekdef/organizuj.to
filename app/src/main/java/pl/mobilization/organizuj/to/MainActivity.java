@@ -1,8 +1,11 @@
 package pl.mobilization.organizuj.to;
 
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -10,6 +13,7 @@ import android.database.sqlite.SQLiteStatement;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -67,6 +71,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     private static final int ATTENDEE_LOADER = 1;
     private static final String[] COLUMNS = {COLUMN_REMOTE_PRESENCE, COLUMN_LOCAL_PRESENCE, COLUMN_FNAME, COLUMN_LNAME, COLUMN_EMAIL, COLUMN_TYPE} ;
     private static final int[] FIELDS = new int[]{ R.id.remote, R.id.local, R.id.first_name, R.id.last_name, R.id.email, R.id.type};
+    private static final String BASE_URL = "http://eventshaper.pl";
+    public static final String UPDATE_ATTENDEES = "pl.mobilization.organizuj.to.update_attendees";
     private AttendeesDBOpenHelper attendeesDBOpenHelper;
     private SQLiteDatabase writableDatabase;
     private ListView listView;
@@ -89,6 +95,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(UPDATE_ATTENDEES);
+        LocalBroadcastManager.getInstance(this).registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                getLoaderManager().restartLoader(ATTENDEE_LOADER, null, null);
+            }
+        }, filter);
+
         setContentView(R.layout.activity_main);
 
         refreshButton = (Button)findViewById(R.id.button);
@@ -136,6 +152,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         0                    // No flags
                 ) {
 
+
         };
 
         adapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
@@ -143,13 +160,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             public boolean setViewValue(View view, Cursor cursor, int i) {
                 if(view.getId() == R.id.remote || view.getId() == R.id.local) {
                     ((CheckBox)view).setChecked(cursor.getInt(i) == 1);
-                    ((CheckBox)view).setText("");
                     return true;
                 } else if (view.getId() == R.id.type) {
                     String type = cursor.getString(i);
                     Integer color = COLOR_MAP.get(type);
                     view.setBackgroundColor(color);
-                    ((TextView)view).setText(type);
+                    ((TextView)view).setText(type.substring(0,1));
                     return true;
                 }
                 return false;
@@ -228,7 +244,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         SharedPreferences pref = getSharedPreferences(getString(R.string.shared_pref), MODE_PRIVATE);
         final String username = pref.getString(getString(R.string.loginPropKey), "");
         final String password = pref.getString(getString(R.string.passwordPropKey), "");
-        final ProgressDialog ringProgressDialog = ProgressDialog.show(MainActivity.this, "Please wait ...", "Downloading ...", true);
+        final ProgressDialog ringProgressDialog = ProgressDialog.show(MainActivity.this, "Please wait ...", "Synchronizing ...", true);
 
         ringProgressDialog.setCancelable(true);
 
@@ -236,10 +252,11 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             new Thread() {
                 @Override
                 public void run() {
-                    Connection connect = Jsoup.connect("http://organizuj.to/users/login");
-                    Connection connect2 = Jsoup.connect("http://organizuj.to/users/login");
-                    Connection connect3 = Jsoup.connect("http://organizuj.to/o/events/mobilization-4/attendances");
-                    Connection connect4 = Jsoup.connect("http://organizuj.to/o/events/mobilization-4/attendances?agenda_day_id=1&sort_by=id&order=asc");
+                    Connection connect = Jsoup.connect(BASE_URL + "/users/login");
+                    Connection connect2 = Jsoup.connect(BASE_URL + "/users/login");
+                    Connection connect3 = Jsoup.connect(BASE_URL + "/o");
+                    Connection connect4 = Jsoup.connect(BASE_URL + "/o/events/mobilization-4/attendances");
+                    Connection connect5 = Jsoup.connect(BASE_URL + "/o/events/mobilization-4/attendances?agenda_day_id=1&sort_by=id&order=asc");
 
 
                     try {
@@ -260,8 +277,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                                 data("user[password]", password).
                                 data("user[remember_me]", "0").
                                 data("commit", "Zaloguj").
-                                referrer("http://organizuj.to/users/login").
-                                header("Origin", "http://organizuj.to").
+                                referrer(BASE_URL + "/users/login").
+                                header("Origin", BASE_URL).
                                 cookies(cookies).
                                 method(Connection.Method.POST).
                                 execute();
@@ -269,13 +286,23 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         int statusCode = response2.statusCode();
                         cookies = response2.cookies();
 
-                        Document document3 = response2.parse();
+                        Connection.Response response3 = connect3.
+                                data("authenticity_token", authenticity_token).
+                                referrer(BASE_URL + "/users/login").
+                                header("Origin", BASE_URL).
+                                cookies(cookies).
+                                method(Connection.Method.GET).
+                                execute();
+
+                        Document document3 = response3.parse();
 
                         Elements csrf_tokens = document3.getElementsByAttributeValue("name", "csrf-token");
                         Element csrf_token = csrf_tokens.get(0);
                         String csrf = csrf_token.attr("content");
 
-                        String text = document3.outerHtml();
+                        Elements scripts = document3.getElementsByTag("head");
+                        Element relic = scripts.get(0);
+                        String text = relic.outerHtml();
 
                         int startOfRelic = text.indexOf("xpid:\"");
 
@@ -290,11 +317,11 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         dataStorage.storeRelic(newRelicId);
 
 
-                        Connection.Response response4 = connect4.data("authenticity_token", authenticity_token).
+                        Connection.Response response4 = connect5.data("authenticity_token", authenticity_token).
                                 ignoreContentType(true).
                                 header("Accept", "application/json, text/javascript, */*; q=0.01").
                                 header("Accept-Encoding", "gzip,deflate,sdch").
-                                referrer("http://organizuj.to/o/events/mobilization-4/attendances").
+                                referrer(BASE_URL + "/o/events/mobilization-4/attendances").
                                 header("Host", "organizuj.to").
                                 header("X-CSRF-Token", csrf).
                                 header("X-Requested-With", "XMLHttpRequest").
@@ -309,6 +336,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
                         Attendee[] attendees = gson.fromJson(body, Attendee[].class);
 
+                        //set everything is local
                         ContentValues contentValues = new ContentValues();
                         contentValues.put(COLUMN_FROM_SERVER, 0);
                         writableDatabase.update(TABLE_NAME, contentValues, null, null);

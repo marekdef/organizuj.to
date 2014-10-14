@@ -6,6 +6,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
+import android.net.Uri;
 import android.os.Handler;
 import android.widget.Toast;
 
@@ -28,6 +29,7 @@ import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_LOCAL_PR
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_REMOTE_PRESENCE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_NEEDSUPDATE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.TABLE_NAME;
+import static pl.mobilization.organizuj.to.AttendeesProvider.ATTENDEES_URI;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -136,6 +138,7 @@ public class UpdateAttendanceIntentService extends IntentService {
         }
         writableDatabase.setTransactionSuccessful();
         writableDatabase.endTransaction();
+
     }
 
     private void sendPresence(Integer id, Boolean present, String authenticity_token, String csrf, String newRelicId, Map<String, String> cookies, Map<Integer, Boolean> out) {
@@ -168,7 +171,7 @@ public class UpdateAttendanceIntentService extends IntentService {
             String body = response4.body();
             Guest guest = new Gson().fromJson(body, Guest.class);
             if(id != guest.id || guest.is_present != present) {
-                LOGGER.warn("Response {} does not match the request {} {}", guest, id, present);
+                LOGGER.warn("Response {} does not match the request {} {}.\n", guest, id, present, body);
                 return;
             }
 
