@@ -30,6 +30,8 @@ import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_REMOTE_P
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_NEEDSUPDATE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.TABLE_NAME;
 import static pl.mobilization.organizuj.to.AttendeesProvider.ATTENDEES_URI;
+import static pl.mobilization.organizuj.to.MainActivity.BASE_URL;
+import static pl.mobilization.organizuj.to.MainActivity.HOST;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -116,10 +118,29 @@ public class UpdateAttendanceIntentService extends IntentService {
         String newRelicId  = dataStorage.getNewRelicId();
         Map<String, String> cookies = dataStorage.getCookies();
 
-        Map<Integer, Boolean> responses = new HashMap<Integer, Boolean>(count);
+
+        Connection connection = Jsoup.connect(BASE_URL).
+                ignoreContentType(true).
+                header("Accept", "application/json, text/javascript, */*; q=0.01").
+                header("Accept-Encoding", "gzip,deflate").
+
+                header("Host", HOST).
+                header("Origin", BASE_URL).
+                header("X-CSRF-Token", csrf).
+                header("X-Requested-With", "XMLHttpRequest").
+                header("X-NewRelic-ID", newRelicId).
+                referrer(BASE_URL + "/o/events/mobilization-4/attendances").
+
+                data("authenticity_token", authenticity_token).
+                data("aid", "D:1                                                                                                                                                                                                                                                            ").
+
+                cookies(cookies).
+                method(Connection.Method.POST);
+
+        final Map<Integer, Boolean> responses = new HashMap<Integer, Boolean>(count);
 
         for(Map.Entry<Integer, Boolean> entry: incomingRequests.entrySet()) {
-            sendPresence(entry.getKey(), entry.getValue(), authenticity_token, csrf, newRelicId, cookies, responses);
+            sendPresence(entry.getKey(), entry.getValue(), connection, responses);
         }
 
         writableDatabase.beginTransaction();
@@ -139,28 +160,20 @@ public class UpdateAttendanceIntentService extends IntentService {
         writableDatabase.setTransactionSuccessful();
         writableDatabase.endTransaction();
 
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(UpdateAttendanceIntentService.this, String.format("%d updaetd", responses.size()), Toast.LENGTH_LONG ).show();
+            }
+        });
     }
 
-    private void sendPresence(Integer id, Boolean present, String authenticity_token, String csrf, String newRelicId, Map<String, String> cookies, Map<Integer, Boolean> out) {
-
-
-
+    private void sendPresence(Integer id, Boolean present, Connection connection, Map<Integer, Boolean> out) {
         Connection.Response response4 = null;
         try {
-            Connection method = Jsoup.connect("http://organizuj.to").
-                    data("authenticity_token", authenticity_token).
-                    data("aid", "D:1                                                                                                                                                                                                                                                            ").
-                    ignoreContentType(true).
-                    header("Accept", "application/json, text/javascript, */*; q=0.01").
-                    header("Accept-Encoding", "gzip,deflate,sdch").
-                    referrer("http://organizuj.to/o/events/mobilization-4/attendances").
-                    header("Host", "organizuj.to").
-                    header("X-CSRF-Token", csrf).
-                    header("X-Requested-With", "XMLHttpRequest").
-                    header("X-NewRelic-ID", newRelicId).
-                    cookies(cookies).method(Connection.Method.POST);
 
-            response4 = method.data("is_present", present ? "1" : "0").url(String.format("http://organizuj.to/o/events/mobilization-4/guests/%s/is_present", id)).execute();
+            response4 = connection.data("is_present", present ? "1" : "0").
+                    url(String.format("%s/o/events/mobilization-4/guests/%s/is_present", BASE_URL, id)).execute();
 
             int statusCode = response4.statusCode();
             if(statusCode != 200)  {
@@ -171,7 +184,7 @@ public class UpdateAttendanceIntentService extends IntentService {
             String body = response4.body();
             Guest guest = new Gson().fromJson(body, Guest.class);
             if(id != guest.id || guest.is_present != present) {
-                LOGGER.warn("Response {} does not match the request {} {}.\n", guest, id, present, body);
+                LOGGER.warn("Response {} does not match the request {} {}.\n{}", guest, id, present, body);
                 return;
             }
 

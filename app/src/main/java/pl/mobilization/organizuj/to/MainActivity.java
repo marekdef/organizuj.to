@@ -71,7 +71,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     private static final int ATTENDEE_LOADER = 1;
     private static final String[] COLUMNS = {COLUMN_REMOTE_PRESENCE, COLUMN_LOCAL_PRESENCE, COLUMN_FNAME, COLUMN_LNAME, COLUMN_EMAIL, COLUMN_TYPE} ;
     private static final int[] FIELDS = new int[]{ R.id.remote, R.id.local, R.id.first_name, R.id.last_name, R.id.email, R.id.type};
-    private static final String BASE_URL = "http://eventshaper.pl";
+    public static final String HOST = "eventshaper.pl";
+    public static final String BASE_URL = "http://" + HOST;
     public static final String UPDATE_ATTENDEES = "pl.mobilization.organizuj.to.update_attendees";
     private AttendeesDBOpenHelper attendeesDBOpenHelper;
     private SQLiteDatabase writableDatabase;
@@ -165,7 +166,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     String type = cursor.getString(i);
                     Integer color = COLOR_MAP.get(type);
                     view.setBackgroundColor(color);
-                    ((TextView)view).setText(type.substring(0,1));
+                    ((TextView)view).setText(type);
                     return true;
                 }
                 return false;
@@ -278,7 +279,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                                 data("user[remember_me]", "0").
                                 data("commit", "Zaloguj").
                                 referrer(BASE_URL + "/users/login").
-                                header("Origin", BASE_URL).
+                                header("Origin", HOST).
                                 cookies(cookies).
                                 method(Connection.Method.POST).
                                 execute();
@@ -289,7 +290,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         Connection.Response response3 = connect3.
                                 data("authenticity_token", authenticity_token).
                                 referrer(BASE_URL + "/users/login").
-                                header("Origin", BASE_URL).
+                                header("Origin", HOST).
                                 cookies(cookies).
                                 method(Connection.Method.GET).
                                 execute();
