@@ -91,6 +91,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     }
 
     private Button refreshButton;
+    private BroadcastReceiver mRefreshListBroadcast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -197,6 +198,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         });
 
         getSupportLoaderManager().initLoader(ATTENDEE_LOADER, null, this);
+        mRefreshListBroadcast = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                adapter.notifyDataSetChanged();
+            }
+        };
     }
 
     private void addHeaders(ListView listView) {
@@ -237,6 +244,15 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     protected void onResume() {
         super.onResume();
         refreshButton.callOnClick();
+        registerReceiver(mRefreshListBroadcast, new IntentFilter(UpdateAttendanceIntentService.ACTION_UPDATE_ATT));
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mRefreshListBroadcast!=null){
+            unregisterReceiver(mRefreshListBroadcast);
+        }
     }
 
     @Override

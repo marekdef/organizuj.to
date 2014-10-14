@@ -12,7 +12,7 @@ public class AttendeesDBOpenHelper extends SQLiteOpenHelper {
 
     public static final String TABLE_NAME = "Attendees";
     private static final String DATABASE_NAME = TABLE_NAME + ".db";
-    private static final int DATABASE_VERSION = 14;
+    private static final int DATABASE_VERSION = 15;
 
 
     public  static final String COLUMN_ID = "_id";
