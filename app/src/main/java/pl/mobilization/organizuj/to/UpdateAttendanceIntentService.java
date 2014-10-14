@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.net.Uri;
 import android.os.Handler;
+import android.support.v4.content.LocalBroadcastManager;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -92,14 +93,6 @@ public class UpdateAttendanceIntentService extends IntentService {
             return;
         }
 
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(UpdateAttendanceIntentService.this, String.format("%d Attendees to update", count), Toast.LENGTH_LONG ).show();
-            }
-        });
-
-
         Map<Integer, Boolean> incomingRequests = new HashMap<Integer, Boolean>(count);
 
         while(cursor.moveToNext()) {
@@ -160,10 +153,12 @@ public class UpdateAttendanceIntentService extends IntentService {
         writableDatabase.setTransactionSuccessful();
         writableDatabase.endTransaction();
 
+        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(MainActivity.UPDATE_ATTENDEES));
+
         handler.post(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(UpdateAttendanceIntentService.this, String.format("%d updaetd", responses.size()), Toast.LENGTH_LONG ).show();
+                Toast.makeText(UpdateAttendanceIntentService.this, String.format("%d updated", responses.size()), Toast.LENGTH_SHORT ).show();
             }
         });
     }

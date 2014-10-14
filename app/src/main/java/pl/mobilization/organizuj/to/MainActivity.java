@@ -102,7 +102,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         LocalBroadcastManager.getInstance(this).registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                getLoaderManager().restartLoader(ATTENDEE_LOADER, null, null);
+                getSupportLoaderManager().restartLoader(ATTENDEE_LOADER, null, MainActivity.this);
             }
         }, filter);
 
