@@ -51,6 +51,7 @@ import pl.mobilization.organizuj.to.json.Attendee;
 import static android.widget.AbsListView.CHOICE_MODE_NONE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_EMAIL;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_FNAME;
+import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_FROM_SERVER;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_ID;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_LNAME;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_LOCAL_PRESENCE;
@@ -308,17 +309,22 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
                         Attendee[] attendees = gson.fromJson(body, Attendee[].class);
 
+                        ContentValues contentValues = new ContentValues();
+                        contentValues.put(COLUMN_FROM_SERVER, 0);
+                        writableDatabase.update(TABLE_NAME, contentValues, null, null);
+
                         writableDatabase.beginTransaction();
 
                         SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO "  + TABLE_NAME + " " +
-                                "(%s, %s, %s, %s, %s, %s ) " +
-                                "VALUES (?, ?, ?, ?, ?, ?) " ,
+                                "(%s, %s, %s, %s, %s, %s, %s) " +
+                                "VALUES (?, ?, ?, ?, ?, ?, 1) " ,
                                 COLUMN_ID,
                                 COLUMN_FNAME,
                                 COLUMN_LNAME,
                                 COLUMN_REMOTE_PRESENCE,
                                 COLUMN_EMAIL,
-                                COLUMN_TYPE));
+                                COLUMN_TYPE,
+                                COLUMN_FROM_SERVER));
 
                         for(Attendee attendee: attendees) {
                             sqLiteStatement.clearBindings();
@@ -332,11 +338,14 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                             sqLiteStatement.execute();
                         }
 
+                        //delete local
+                        writableDatabase.delete(TABLE_NAME, COLUMN_FROM_SERVER+"=0", null);
+
                         writableDatabase.setTransactionSuccessful();
                         writableDatabase.endTransaction();
 
+                        //synchronize statuses where there is not local change (needs update)
                         writableDatabase.execSQL("UPDATE " + TABLE_NAME + " SET " + COLUMN_LOCAL_PRESENCE + " = " + COLUMN_REMOTE_PRESENCE + " WHERE " + COLUMN_NEEDSUPDATE + " = 0");
-
                     } catch (IOException e) {
                         LOGGER.error("IOException while inserting Attendees", e);
                     } finally {
