@@ -32,6 +32,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 
@@ -234,7 +235,15 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_logout) {
+            SharedPreferences pref = getSharedPreferences(getString(R.string.shared_pref), MODE_PRIVATE);
+            SharedPreferences.Editor editor = pref.edit();
+            editor.putString(getString(R.string.loginPropKey), "");
+            editor.putString(getString(R.string.passwordPropKey), "");
+            editor.commit();
+            Intent i = new Intent(this, LoginActivity.class);
+            startActivity(i);
+            finish();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -257,7 +266,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     }
 
     @Override
-    public void onClick(View v) {
+    public void onClick(final View v) {
         SharedPreferences pref = getSharedPreferences(getString(R.string.shared_pref), MODE_PRIVATE);
         final String username = pref.getString(getString(R.string.loginPropKey), "");
         final String password = pref.getString(getString(R.string.passwordPropKey), "");
@@ -391,8 +400,14 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
                         //synchronize statuses where there is not local change (needs update)
                         writableDatabase.execSQL("UPDATE " + TABLE_NAME + " SET " + COLUMN_LOCAL_PRESENCE + " = " + COLUMN_REMOTE_PRESENCE + " WHERE " + COLUMN_NEEDSUPDATE + " = 0");
-                    } catch (IOException e) {
+                    } catch (final Exception e) {
+
                         LOGGER.error("IOException while inserting Attendees", e);
+                        listView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(listView.getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }});
                     } finally {
                         listView.post(new Runnable() {
                             @Override
