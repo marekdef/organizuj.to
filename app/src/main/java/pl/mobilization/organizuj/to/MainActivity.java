@@ -166,7 +166,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 } else if (view.getId() == R.id.type) {
                     String type = cursor.getString(i);
                     Integer color = COLOR_MAP.get(type);
-                    view.setBackgroundColor(color);
+                    ((View)view.getParent().getParent()).setBackgroundColor(color);
                     ((TextView)view).setText(type);
                     return true;
                 }
