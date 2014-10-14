@@ -13,7 +13,8 @@
         android:layout_height="wrap_content"
         android:clickable="false"
         android:text=""
-        android:visibility="gone"/>
+        android:visibility="gone"
+        />
 
     <CheckBox
         android:id="@+id/local"

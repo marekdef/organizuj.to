@@ -6,14 +6,12 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
-import android.net.Uri;
 import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
 
-import org.apache.http.HttpStatus;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
@@ -30,7 +28,6 @@ import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_LOCAL_PR
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_REMOTE_PRESENCE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_NEEDSUPDATE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.TABLE_NAME;
-import static pl.mobilization.organizuj.to.AttendeesProvider.ATTENDEES_URI;
 import static pl.mobilization.organizuj.to.MainActivity.BASE_URL;
 import static pl.mobilization.organizuj.to.MainActivity.HOST;
 
@@ -46,6 +43,7 @@ public class UpdateAttendanceIntentService extends IntentService {
     // TODO: Rename actions, choose action names that describe tasks that this
     // IntentService can perform, e.g. ACTION_FETCH_NEW_ITEMS
     private static final String ACTION_CHECKIN = "pl.mobilization.organizuj.to.action.UPDATE";
+    public static final String ACTION_UPDATE_ATT = "pl.mobilization.organizuj.to.UPDATE_ATT";
 
     private AttendeesDBOpenHelper attendeesDBOpenHelper;
     private DataStorage dataStorage;
@@ -152,6 +150,7 @@ public class UpdateAttendanceIntentService extends IntentService {
         }
         writableDatabase.setTransactionSuccessful();
         writableDatabase.endTransaction();
+        getApplicationContext().sendBroadcast(new Intent(ACTION_UPDATE_ATT));
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(MainActivity.UPDATE_ATTENDEES));
 

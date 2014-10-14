@@ -92,6 +92,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     }
 
     private Button refreshButton;
+    private BroadcastReceiver mRefreshListBroadcast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -165,7 +166,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 } else if (view.getId() == R.id.type) {
                     String type = cursor.getString(i);
                     Integer color = COLOR_MAP.get(type);
-                    view.setBackgroundColor(color);
+                    ((View)view.getParent().getParent()).setBackgroundColor(color);
                     ((TextView)view).setText(type);
                     return true;
                 }
@@ -198,6 +199,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         });
 
         getSupportLoaderManager().initLoader(ATTENDEE_LOADER, null, this);
+        mRefreshListBroadcast = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                adapter.notifyDataSetChanged();
+            }
+        };
     }
 
     private void addHeaders(ListView listView) {
@@ -238,6 +245,15 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     protected void onResume() {
         super.onResume();
         refreshButton.callOnClick();
+        registerReceiver(mRefreshListBroadcast, new IntentFilter(UpdateAttendanceIntentService.ACTION_UPDATE_ATT));
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mRefreshListBroadcast!=null){
+            unregisterReceiver(mRefreshListBroadcast);
+        }
     }
 
     @Override
