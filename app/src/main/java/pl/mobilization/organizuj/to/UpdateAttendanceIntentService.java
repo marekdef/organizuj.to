@@ -6,9 +6,12 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
+import android.os.Handler;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 
+import org.apache.http.HttpStatus;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
@@ -42,6 +45,7 @@ public class UpdateAttendanceIntentService extends IntentService {
     private AttendeesDBOpenHelper attendeesDBOpenHelper;
     private DataStorage dataStorage;
     private SQLiteDatabase writableDatabase;
+    private Handler handler;
 
     /**
      * Starts this service to perform action Foo with the given parameters. If
@@ -78,11 +82,19 @@ public class UpdateAttendanceIntentService extends IntentService {
                 new String[]{COLUMN_ID, COLUMN_LOCAL_PRESENCE},
                 COLUMN_NEEDSUPDATE + " = 1 ", null, null, null, null);
 
-        int count = cursor.getCount();
+        final int count = cursor.getCount();
         if (count == 0) {
             LOGGER.warn("handleActionCheckIn No items to checkin");
             return;
         }
+
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(UpdateAttendanceIntentService.this, String.format("%d Attendees to update", count), Toast.LENGTH_LONG ).show();
+            }
+        });
+
 
         Map<Integer, Boolean> incomingRequests = new HashMap<Integer, Boolean>(count);
 
@@ -102,23 +114,10 @@ public class UpdateAttendanceIntentService extends IntentService {
         String newRelicId  = dataStorage.getNewRelicId();
         Map<String, String> cookies = dataStorage.getCookies();
 
-        Connection method = Jsoup.connect("http://organizuj.to").
-                data("authenticity_token", authenticity_token).
-                data("aid", "D:1                                                                                                                                                                                                                                                            ").
-                ignoreContentType(true).
-                header("Accept", "application/json, text/javascript, */*; q=0.01").
-                header("Accept-Encoding", "gzip,deflate,sdch").
-                referrer("http://organizuj.to/o/events/mobilization-4/attendances").
-                header("Host", "organizuj.to").
-                header("X-CSRF-Token", csrf).
-                header("X-Requested-With", "XMLHttpRequest").
-                header("X-NewRelic-ID", newRelicId).
-                cookies(cookies).method(Connection.Method.POST);
-
         Map<Integer, Boolean> responses = new HashMap<Integer, Boolean>(count);
 
         for(Map.Entry<Integer, Boolean> entry: incomingRequests.entrySet()) {
-            sendPresence(entry.getKey(), entry.getValue(), method, responses);
+            sendPresence(entry.getKey(), entry.getValue(), authenticity_token, csrf, newRelicId, cookies, responses);
         }
 
         writableDatabase.beginTransaction();
@@ -139,14 +138,32 @@ public class UpdateAttendanceIntentService extends IntentService {
         writableDatabase.endTransaction();
     }
 
-    private void sendPresence(Integer id, Boolean present, Connection method, Map<Integer, Boolean> out) {
+    private void sendPresence(Integer id, Boolean present, String authenticity_token, String csrf, String newRelicId, Map<String, String> cookies, Map<Integer, Boolean> out) {
 
 
 
         Connection.Response response4 = null;
         try {
+            Connection method = Jsoup.connect("http://organizuj.to").
+                    data("authenticity_token", authenticity_token).
+                    data("aid", "D:1                                                                                                                                                                                                                                                            ").
+                    ignoreContentType(true).
+                    header("Accept", "application/json, text/javascript, */*; q=0.01").
+                    header("Accept-Encoding", "gzip,deflate,sdch").
+                    referrer("http://organizuj.to/o/events/mobilization-4/attendances").
+                    header("Host", "organizuj.to").
+                    header("X-CSRF-Token", csrf).
+                    header("X-Requested-With", "XMLHttpRequest").
+                    header("X-NewRelic-ID", newRelicId).
+                    cookies(cookies).method(Connection.Method.POST);
+
             response4 = method.data("is_present", present ? "1" : "0").url(String.format("http://organizuj.to/o/events/mobilization-4/guests/%s/is_present", id)).execute();
 
+            int statusCode = response4.statusCode();
+            if(statusCode != 200)  {
+                LOGGER.warn("status code {}", statusCode);
+                return;
+            }
 
             String body = response4.body();
             Guest guest = new Gson().fromJson(body, Guest.class);
@@ -175,6 +192,7 @@ public class UpdateAttendanceIntentService extends IntentService {
     @Override
     public void onStart(Intent intent, int startId) {
         super.onStart(intent, startId);
+        handler = new Handler();
     }
 
 }

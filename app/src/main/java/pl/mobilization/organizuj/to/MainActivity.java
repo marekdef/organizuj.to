@@ -16,6 +16,8 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.AttributeSet;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -55,6 +57,7 @@ import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_LOCAL_PR
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_NEEDSUPDATE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_REMOTE_PRESENCE;
 import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.COLUMN_TYPE;
+import static pl.mobilization.organizuj.to.AttendeesDBOpenHelper.TABLE_NAME;
 
 
 public class MainActivity extends ActionBarActivity implements View.OnClickListener, LoaderManager.LoaderCallbacks<Cursor> {
@@ -76,9 +79,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     static {
         COLOR_MAP.put("Attendee", 0xFF00FF00);
         COLOR_MAP.put("VIP", 0xFFFF0000);
-        COLOR_MAP.put("Speaker", 0xFFFF);
+        COLOR_MAP.put("Speaker", 0xFF00FFFF);
         COLOR_MAP.put("Organizer", 0xFFFFFF00);
-
     }
 
     private Button refreshButton;
@@ -118,6 +120,10 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         writableDatabase = attendeesDBOpenHelper.getWritableDatabase();
 
         listView = (ListView) findViewById(R.id.listview);
+        addHeaders(listView);
+
+
+
         listView.setChoiceMode(CHOICE_MODE_NONE);
         adapter = new SimpleCursorAdapter(
 
@@ -141,7 +147,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 } else if (view.getId() == R.id.type) {
                     String type = cursor.getString(i);
                     Integer color = COLOR_MAP.get(type);
-                    ((View)view.getParent()).setBackgroundColor(color);
                     view.setBackgroundColor(color);
                     ((TextView)view).setText(type);
                     return true;
@@ -157,11 +162,14 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 LOGGER.debug("onItemClick on view {} at {} on id {}", view, position, id);
                 CheckBox local = (CheckBox) view.findViewById(R.id.local);
 
+                if(local == null)
+                    return;
+
                 ContentValues cv = new ContentValues();
                 cv.put(COLUMN_NEEDSUPDATE, 1);
                 cv.put(COLUMN_LOCAL_PRESENCE, !local.isChecked());
 
-                int rows = writableDatabase.update(AttendeesDBOpenHelper.TABLE_NAME, cv, COLUMN_ID + " = ?",
+                int rows = writableDatabase.update(TABLE_NAME, cv, COLUMN_ID + " = ?",
 
                         new String[]{String.valueOf(id)});
 
@@ -172,6 +180,19 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         });
 
         getSupportLoaderManager().initLoader(ATTENDEE_LOADER, null, this);
+    }
+
+    private void addHeaders(ListView listView) {
+            LayoutInflater systemService = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+        View inflate = systemService.inflate(R.layout.header, null);
+        listView.addHeaderView(inflate);
+        listView.addHeaderView(inflate);
+    }
+
+    @Override
+    public void takeKeyEvents(boolean get) {
+        super.takeKeyEvents(get);
     }
 
 
@@ -289,9 +310,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
                         writableDatabase.beginTransaction();
 
-                        SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO ATTENDEES " +
+                        SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO "  + TABLE_NAME + " " +
                                 "(%s, %s, %s, %s, %s, %s ) " +
-                                "VALUES (?, ?, ?, ?, ?, ?)",
+                                "VALUES (?, ?, ?, ?, ?, ?) " ,
                                 COLUMN_ID,
                                 COLUMN_FNAME,
                                 COLUMN_LNAME,
@@ -308,11 +329,17 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                             sqLiteStatement.bindString(5, StringUtils.defaultString(attendee.email));
                             sqLiteStatement.bindString(6, StringUtils.defaultString(attendee.type, "Attendee"));
 
-
                             sqLiteStatement.execute();
                         }
+
                         writableDatabase.setTransactionSuccessful();
                         writableDatabase.endTransaction();
+
+                        writableDatabase.execSQL("UPDATE " + TABLE_NAME + " SET " + COLUMN_LOCAL_PRESENCE + " = " + COLUMN_REMOTE_PRESENCE + " WHERE " + COLUMN_NEEDSUPDATE + " = 0");
+
+                    } catch (IOException e) {
+                        LOGGER.error("IOException while inserting Attendees", e);
+                    } finally {
                         listView.post(new Runnable() {
                             @Override
                             public void run() {
@@ -320,9 +347,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                                 ringProgressDialog.dismiss();
                             }
                         });
-                    } catch (IOException e) {
-                        LOGGER.error("IOException while inserting Attendees", e);
-                        ringProgressDialog.dismiss();
                     }
                 }
             }.start();
