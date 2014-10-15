@@ -85,9 +85,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     private static Map<String, Integer> COLOR_MAP = new HashMap<String, Integer>();
 
     static {
-        COLOR_MAP.put("Attendee", 0xFF00FF00);
+        COLOR_MAP.put("Attendee", 0xFFEEEEEE);
         COLOR_MAP.put("VIP", 0xFFFF0000);
-        COLOR_MAP.put("Speaker", 0xFF00FFFF);
+        COLOR_MAP.put("Speaker", 0xFF0000FF);
         COLOR_MAP.put("Organizer", 0xFFFFFF00);
     }
 
@@ -165,8 +165,10 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                 } else if (view.getId() == R.id.type) {
                     String type = cursor.getString(i);
                     Integer color = COLOR_MAP.get(type);
-                    ((View)view.getParent().getParent()).setBackgroundColor(color);
-                    ((TextView)view).setText(type);
+                    if(color != null) {
+                        ((View) view.getParent().getParent()).setBackgroundColor(color);
+                        ((TextView) view).setText(type.substring(0, 1));
+                    }
                     return true;
                 }
                 return false;
