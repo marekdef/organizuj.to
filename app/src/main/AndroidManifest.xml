@@ -19,13 +19,13 @@
         </activity>
         <activity
             android:name="pl.mobilization.organizuj.to.MainActivity"
-            android:label="@string/app_name"
-            android:screenOrientation="landscape">
+            android:label="@string/app_name">
         </activity>
 
         <provider
             android:name="pl.mobilization.organizuj.to.AttendeesProvider"
-            android:authorities="pl.mobilization.organizuj.to.attendees" />
+            android:authorities="pl.mobilization.organizuj.to.attendees"
+            android:exported="false"/>
 
         <service
             android:name="pl.mobilization.organizuj.to.UpdateAttendanceIntentService"
