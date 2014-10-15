@@ -167,7 +167,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     Integer color = COLOR_MAP.get(type);
                     if(color != null) {
                         ((View) view.getParent().getParent()).setBackgroundColor(color);
-                        ((TextView) view).setText(type.substring(0, 1));
+                        ((TextView) view).setText(type);
                     }
                     return true;
                 }
@@ -411,7 +411,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     writableDatabase.endTransaction();
                     if(attendees.length == 0)
                         return 0;
-                    return 1.0f - (float)present_count/attendees.length;
+                    return 100 - (100.0f*present_count)/attendees.length;
 
                 }
             }.start();
