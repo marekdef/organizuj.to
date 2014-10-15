@@ -17,6 +17,10 @@ public class Attendee {
     public String type;
     public String url;
 
+    public Attendee() {
+
+    }
+
     @Override
     public String toString() {
         return new ReflectionToStringBuilder(this).toString();

@@ -20,12 +20,10 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -35,7 +33,6 @@ import android.widget.TextView;
 
 import com.google.gson.Gson;
 
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -92,22 +89,28 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     }
 
     private Button refreshButton;
-    private BroadcastReceiver mRefreshListBroadcast;
+    private TextView textViewStalaSaramak;
+    private BroadcastReceiver broadcastReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        textViewStalaSaramak = (TextView)findViewById(R.id.stalasaramaka);
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(UPDATE_ATTENDEES);
-        LocalBroadcastManager.getInstance(this).registerReceiver(new BroadcastReceiver() {
+
+        broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                getSupportLoaderManager().restartLoader(ATTENDEE_LOADER, null, MainActivity.this);
-            }
-        }, filter);
+                if (intent.getAction().equals(UPDATE_ATTENDEES)) {
+                    getSupportLoaderManager().restartLoader(ATTENDEE_LOADER, null, MainActivity.this);
+                }
 
-        setContentView(R.layout.activity_main);
+            }
+        };
 
         refreshButton = (Button)findViewById(R.id.button);
 
@@ -199,16 +202,10 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         });
 
         getSupportLoaderManager().initLoader(ATTENDEE_LOADER, null, this);
-        mRefreshListBroadcast = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                adapter.notifyDataSetChanged();
-            }
-        };
     }
 
     private void addHeaders(ListView listView) {
-            LayoutInflater systemService = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        LayoutInflater systemService = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
         View inflate = systemService.inflate(R.layout.header, null);
         listView.addHeaderView(inflate);
@@ -245,15 +242,13 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     protected void onResume() {
         super.onResume();
         refreshButton.callOnClick();
-        registerReceiver(mRefreshListBroadcast, new IntentFilter(UpdateAttendanceIntentService.ACTION_UPDATE_ATT));
+        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, new IntentFilter(UpdateAttendanceIntentService.ACTION_UPDATE_ATT));
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (mRefreshListBroadcast!=null){
-            unregisterReceiver(mRefreshListBroadcast);
-        }
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver);
     }
 
     @Override
@@ -349,48 +344,15 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         String body = response4.body();
 
                         Gson gson = new Gson();
-
-
                         Attendee[] attendees = gson.fromJson(body, Attendee[].class);
+                        final float stalaSaramaka = insertAttendeesIntoDBAndCalculateStalaSaramaka(attendees);
+                        textViewStalaSaramak.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                textViewStalaSaramak.setText(String.format("%.2f", stalaSaramaka));
 
-                        //set everything is local
-                        ContentValues contentValues = new ContentValues();
-                        contentValues.put(COLUMN_FROM_SERVER, 0);
-                        writableDatabase.update(TABLE_NAME, contentValues, null, null);
-
-                        writableDatabase.beginTransaction();
-
-                        SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO "  + TABLE_NAME + " " +
-                                "(%s, %s, %s, %s, %s, %s, %s) " +
-                                "VALUES (?, ?, ?, ?, ?, ?, 1) " ,
-                                COLUMN_ID,
-                                COLUMN_FNAME,
-                                COLUMN_LNAME,
-                                COLUMN_REMOTE_PRESENCE,
-                                COLUMN_EMAIL,
-                                COLUMN_TYPE,
-                                COLUMN_FROM_SERVER));
-
-                        for(Attendee attendee: attendees) {
-                            sqLiteStatement.clearBindings();
-                            sqLiteStatement.bindLong(1, attendee.id);
-                            sqLiteStatement.bindString(2, StringUtils.defaultString(attendee.first_name));
-                            sqLiteStatement.bindString(3, StringUtils.defaultString(attendee.last_name));
-                            sqLiteStatement.bindLong(4, attendee.is_present ? 1 : 0);
-                            sqLiteStatement.bindString(5, StringUtils.defaultString(attendee.email));
-                            sqLiteStatement.bindString(6, StringUtils.defaultString(attendee.type, "Attendee"));
-
-                            sqLiteStatement.execute();
-                        }
-
-                        //delete local
-                        writableDatabase.delete(TABLE_NAME, COLUMN_FROM_SERVER+"=0", null);
-
-                        writableDatabase.setTransactionSuccessful();
-                        writableDatabase.endTransaction();
-
-                        //synchronize statuses where there is not local change (needs update)
-                        writableDatabase.execSQL("UPDATE " + TABLE_NAME + " SET " + COLUMN_LOCAL_PRESENCE + " = " + COLUMN_REMOTE_PRESENCE + " WHERE " + COLUMN_NEEDSUPDATE + " = 0");
+                            }
+                        });
                     } catch (IOException e) {
                         LOGGER.error("IOException while inserting Attendees", e);
                     } finally {
@@ -402,6 +364,56 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                             }
                         });
                     }
+                }
+
+                private float insertAttendeesIntoDBAndCalculateStalaSaramaka(Attendee[] attendees) {
+                    //set everything is local
+                    ContentValues contentValues = new ContentValues();
+                    contentValues.put(COLUMN_FROM_SERVER, 0);
+                    writableDatabase.update(TABLE_NAME, contentValues, null, null);
+
+                    writableDatabase.beginTransaction();
+
+                    SQLiteStatement sqLiteStatement = writableDatabase.compileStatement(String.format("INSERT OR REPLACE INTO "  + TABLE_NAME + " " +
+                            "(%s, %s, %s, %s, %s, %s, %s) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, 1) " ,
+                            COLUMN_ID,
+                            COLUMN_FNAME,
+                            COLUMN_LNAME,
+                            COLUMN_REMOTE_PRESENCE,
+                            COLUMN_EMAIL,
+                            COLUMN_TYPE,
+                            COLUMN_FROM_SERVER));
+
+                    int present_count = 0;
+
+                    for(Attendee attendee: attendees) {
+                        sqLiteStatement.clearBindings();
+                        sqLiteStatement.bindLong(1, attendee.id);
+                        sqLiteStatement.bindString(2, StringUtils.defaultString(attendee.first_name));
+                        sqLiteStatement.bindString(3, StringUtils.defaultString(attendee.last_name));
+                        if (attendee.is_present) {
+                            present_count++;
+                            sqLiteStatement.bindLong(4, 1);
+                        } else {
+                            sqLiteStatement.bindLong(4, 0);
+                        }
+                        sqLiteStatement.bindString(5, StringUtils.defaultString(attendee.email));
+                        sqLiteStatement.bindString(6, StringUtils.defaultString(attendee.type, "Attendee"));
+
+                        sqLiteStatement.execute();
+                    }
+
+                    //delete local entries
+                    writableDatabase.delete(TABLE_NAME, COLUMN_FROM_SERVER+"=0", null);
+                    //synchronize statuses where there is no local change (needs update is = 0)
+                    writableDatabase.execSQL("UPDATE " + TABLE_NAME + " SET " + COLUMN_LOCAL_PRESENCE + " = " + COLUMN_REMOTE_PRESENCE + " WHERE " + COLUMN_NEEDSUPDATE + " = 0");
+                    writableDatabase.setTransactionSuccessful();
+                    writableDatabase.endTransaction();
+                    if(attendees.length == 0)
+                        return 0;
+                    return 1.0f - (float)present_count/attendees.length;
+
                 }
             }.start();
         }

@@ -20,6 +20,13 @@
             android:layout_alignParentStart="true" />
 
         <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/stalasaramaka"
+            android:text="0.0"
+            />
+
+        <EditText
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:inputType="textPersonName"
@@ -28,9 +35,7 @@
             android:ems="10"
             android:id="@+id/filter"
             android:layout_toRightOf="@+id/button" />
-        </LinearLayout>
-
-
+    </LinearLayout>
 
     <ListView
         android:clickable="true"
