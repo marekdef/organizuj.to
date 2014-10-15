@@ -141,9 +141,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         writableDatabase = attendeesDBOpenHelper.getWritableDatabase();
 
         listView = (ListView) findViewById(R.id.listview);
-        addHeaders(listView);
-
-
 
         listView.setChoiceMode(CHOICE_MODE_NONE);
         adapter = new SimpleCursorAdapter(
@@ -201,14 +198,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         });
 
         getSupportLoaderManager().initLoader(ATTENDEE_LOADER, null, this);
-    }
-
-    private void addHeaders(ListView listView) {
-        LayoutInflater systemService = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
-        View inflate = systemService.inflate(R.layout.header, null);
-        listView.addHeaderView(inflate);
-        listView.addHeaderView(inflate);
     }
 
     @Override
@@ -351,7 +340,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         String body = response4.body();
 
                         Gson gson = new Gson();
-
 
                         Attendee[] attendees = gson.fromJson(body, Attendee[].class);
                         final float stalaSaramaka = insertAttendeesIntoDBAndCalculateStalaSaramaka(attendees);
