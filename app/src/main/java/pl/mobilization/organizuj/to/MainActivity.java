@@ -20,10 +20,12 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -33,6 +35,7 @@ import android.widget.TextView;
 
 import com.google.gson.Gson;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -101,16 +104,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(UPDATE_ATTENDEES);
-
-        broadcastReceiver = new BroadcastReceiver() {
+        LocalBroadcastManager.getInstance(this).registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                if (intent.getAction().equals(UPDATE_ATTENDEES)) {
-                    getSupportLoaderManager().restartLoader(ATTENDEE_LOADER, null, MainActivity.this);
-                }
-
+                getSupportLoaderManager().restartLoader(ATTENDEE_LOADER, null, MainActivity.this);
             }
-        };
+        }, filter);
 
         refreshButton = (Button)findViewById(R.id.button);
 
@@ -231,7 +230,15 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_logout) {
+            SharedPreferences pref = getSharedPreferences(getString(R.string.shared_pref), MODE_PRIVATE);
+            SharedPreferences.Editor editor = pref.edit();
+            editor.putString(getString(R.string.loginPropKey), "");
+            editor.putString(getString(R.string.passwordPropKey), "");
+            editor.commit();
+            Intent i = new Intent(this, LoginActivity.class);
+            startActivity(i);
+            finish();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -344,6 +351,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         String body = response4.body();
 
                         Gson gson = new Gson();
+
+
                         Attendee[] attendees = gson.fromJson(body, Attendee[].class);
                         final float stalaSaramaka = insertAttendeesIntoDBAndCalculateStalaSaramaka(attendees);
                         textViewStalaSaramak.post(new Runnable() {
