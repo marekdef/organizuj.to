@@ -168,7 +168,7 @@ public class UpdateAttendanceIntentService extends IntentService {
             Map<String, String> cookies = dataStorage.getCookies();
 
 
-            Connection connection = Jsoup.connect(BASE_URL).
+            Connection connection = Jsoup.connect(BASE_URL).timeout(5000).
                     ignoreContentType(true).
                     header("Accept", "application/json, text/javascript, */*; q=0.01").
                     header("Accept-Encoding", "gzip,deflate").
@@ -269,11 +269,11 @@ public class UpdateAttendanceIntentService extends IntentService {
     }
 
     public void handleActionSync(String username, String password) {
-        Connection connect = Jsoup.connect(BASE_URL + "/users/login");
-        Connection connect2 = Jsoup.connect(BASE_URL + "/users/login");
-        Connection connect3 = Jsoup.connect(BASE_URL + "/o");
-        Connection connect4 = Jsoup.connect(BASE_URL + "/o/events/mobilization-4/attendances");
-        Connection connect5 = Jsoup.connect(BASE_URL + "/o/events/mobilization-4/attendances?agenda_day_id=1&sort_by=id&order=asc");
+        Connection connect = Jsoup.connect(BASE_URL + "/users/login").timeout(5000);
+        Connection connect2 = Jsoup.connect(BASE_URL + "/users/login").timeout(5000);
+        Connection connect3 = Jsoup.connect(BASE_URL + "/o").timeout(5000);
+        Connection connect4 = Jsoup.connect(BASE_URL + "/o/events/mobilization-4/attendances").timeout(7000);
+        Connection connect5 = Jsoup.connect(BASE_URL + "/o/events/mobilization-4/attendances?agenda_day_id=1&sort_by=id&order=asc").timeout(10000);
 
         try {
             Document document = connect.get();
@@ -354,6 +354,7 @@ public class UpdateAttendanceIntentService extends IntentService {
             dataStorage.storeStalaSaramaka(stalaSaramaka);
         } catch (IOException e) {
             LOGGER.error("IOException while inserting Attendees", e);
+            Toast.makeText(this, "IOException", Toast.LENGTH_LONG);
         } finally {
             LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(UPDATE_ATTENDEES_ACTION));
         }

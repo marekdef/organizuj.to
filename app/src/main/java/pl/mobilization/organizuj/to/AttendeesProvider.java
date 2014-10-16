@@ -91,7 +91,7 @@ public class AttendeesProvider extends ContentProvider {
                 throw new IllegalArgumentException(
                         "Unsupported URI: " + uri);
         }
-        LOGGER.info("Selection {} args {}", selection, new ReflectionToStringBuilder(selectionArgs).toString());
+        LOGGER.debug("Selection {} args {}", selection, new ReflectionToStringBuilder(selectionArgs).toString());
         Cursor cursor =
                 builder.query(
                         db,
