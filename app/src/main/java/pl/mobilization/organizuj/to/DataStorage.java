@@ -92,7 +92,7 @@ public class DataStorage {
 
     public void storeStalaSaramaka(float stalaSaramaka) {
         this.stalaSaramaka = stalaSaramaka;
-        SharedPreferences.Editor edit = this.sharedPreferences.edit().putFloat(STALA_SARAMAKA, stalaSaramaka);
+        this.sharedPreferences.edit().putFloat(STALA_SARAMAKA, stalaSaramaka).commit();
     }
 
     public Map<String, String> getCookies() {
