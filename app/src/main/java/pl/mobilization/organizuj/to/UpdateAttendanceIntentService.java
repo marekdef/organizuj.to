@@ -354,7 +354,7 @@ public class UpdateAttendanceIntentService extends IntentService {
             dataStorage.storeStalaSaramaka(stalaSaramaka);
         } catch (IOException e) {
             LOGGER.error("IOException while inserting Attendees", e);
-            Toast.makeText(this, "IOException", Toast.LENGTH_LONG);
+            Toast.makeText(this, "IOException", Toast.LENGTH_LONG).show();
         } finally {
             LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(UPDATE_ATTENDEES_ACTION));
         }
