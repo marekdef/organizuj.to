@@ -3,7 +3,6 @@
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:layout_alignBottom="@+id/editTextFilter"
     >
 
     <LinearLayout
@@ -15,9 +14,7 @@
             android:layout_height="wrap_content"
             android:text="@string/refresh"
             android:id="@+id/button"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true" />
+        />
 
         <TextView
             android:layout_width="wrap_content"
@@ -33,8 +30,7 @@
             android:text=""
             android:hint="Name, email"
             android:ems="10"
-            android:id="@+id/filter"
-            android:layout_toRightOf="@+id/button" />
+            android:id="@+id/filter" />
     </LinearLayout>
 
     <ListView
@@ -42,8 +38,6 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:id="@+id/listview"
-        android:layout_below="@+id/button"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
+    />
 
     </LinearLayout>

@@ -24,6 +24,7 @@ public class DataStorage {
     private static final String NEW_RELIC_ID = "NEW_RELIC_ID";
     private static final String COOKIES = "COOKIES";
     private static final Logger LOGGER = LoggerFactory.getLogger(DataStorage.class);
+    private static final String STALA_SARAMAKA = "STALA_SARAMAKA";
 
     private static boolean invalid = false;
     private final SharedPreferences sharedPreferences;
@@ -33,6 +34,7 @@ public class DataStorage {
     private String newRelicId;
     private Map<String, String>  cookies = new HashMap<String, String>();;
     private String authenticityToken;
+    private float stalaSaramaka;
 
     public DataStorage(Context context) {
         sharedPreferences = context.getSharedPreferences("Organizuj.to", Context.MODE_PRIVATE);
@@ -41,6 +43,8 @@ public class DataStorage {
         authenticityToken = sharedPreferences.getString(AUTHENTICITY_TOKEN, null);
         csrf = sharedPreferences.getString(CSRF, null);
         newRelicId = sharedPreferences.getString(NEW_RELIC_ID, null);
+
+        stalaSaramaka = sharedPreferences.getFloat(STALA_SARAMAKA, 100.0f);
 
         convertSP2Cookies();
     }
@@ -86,6 +90,11 @@ public class DataStorage {
         edit.commit();
     }
 
+    public void storeStalaSaramaka(float stalaSaramaka) {
+        this.stalaSaramaka = stalaSaramaka;
+        SharedPreferences.Editor edit = this.sharedPreferences.edit().putFloat(STALA_SARAMAKA, stalaSaramaka);
+    }
+
     public Map<String, String> getCookies() {
         return cookies;
     }
@@ -100,5 +109,10 @@ public class DataStorage {
 
     public String getAuthenticityToken() {
         return authenticityToken;
+    }
+
+
+    public float getStalaSaramaka() {
+        return stalaSaramaka;
     }
 }
