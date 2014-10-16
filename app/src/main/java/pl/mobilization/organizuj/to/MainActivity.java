@@ -239,7 +239,13 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     @Override
     protected void onResume() {
         super.onResume();
-        refreshButton.callOnClick();
+        refreshButton.post(new Runnable() {
+            @Override
+            public void run() {
+                onClick(refreshButton);
+            }
+        });
+
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, new IntentFilter(UpdateAttendanceIntentService.ACTION_UPDATE_ATT));
     }
 
