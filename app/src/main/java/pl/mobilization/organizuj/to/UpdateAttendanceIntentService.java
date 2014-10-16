@@ -100,6 +100,10 @@ public class UpdateAttendanceIntentService extends IntentService {
             final String action = intent.getAction();
             if (ACTION_CHECKIN.equals(action)) {
                 long id = intent.getLongExtra(PARAM_ID, -1);
+                if( id == -1) {
+                    LOGGER.warn("Parameter id is missing");
+                    return;
+                }
                 boolean present = intent.getBooleanExtra(PARAM_PRESENT, false);
                 handleActionCheckIn(id, present);
             } else {
