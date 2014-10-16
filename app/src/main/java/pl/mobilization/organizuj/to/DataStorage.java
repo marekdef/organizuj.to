@@ -111,7 +111,6 @@ public class DataStorage {
         return authenticityToken;
     }
 
-
     public float getStalaSaramaka() {
         return stalaSaramaka;
     }
